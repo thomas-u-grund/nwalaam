@@ -20,9 +20,11 @@ capture mata: mata drop AlaamPluginPath()
 capture mata: mata drop AlaamNativeAvailable()
 capture mata: mata drop ALAAM_PROTOCOL_NEEDED()
 capture mata: mata drop alaam_node_rows()
+capture mata: mata drop alaam_pull()
 capture mata: mata drop AlaamNat()
 capture mata: mata drop alaam_effects()
 capture mata: mata drop alaam_logit()
+capture mata: mata drop alaam_fixed()
 capture mata: mata drop alaam_bmcov()
 capture mata: mata drop AlaamFit()
 capture mata: mata drop AlaamDeltas()
@@ -55,6 +57,18 @@ real colvector alaam_node_rows(string rowvector names, string colvector lab)
 		if (asarray_contains(A, names[k])) pos[k] = asarray(A, names[k])
 	}
 	return(pos)
+}
+
+// one value per node from the dataset rows of the nodes (0 = the node has no row: missing)
+real colvector alaam_pull(real colvector rows, string scalar var)
+{
+	real colvector v, out
+	real scalar k
+
+	out = J(rows(rows), 1, .)
+	v = st_data(., var)
+	for (k = 1; k <= rows(rows); k++) if (rows[k] > 0) out[k] = v[rows[k]]
+	return(out)
 }
 
 string scalar AlaamPluginFilename()
@@ -100,7 +114,7 @@ real scalar AlaamNativeAvailable()
 	return(fileexists(p))
 }
 
-real scalar ALAAM_PROTOCOL_NEEDED() return(4)
+real scalar ALAAM_PROTOCOL_NEEDED() return(5)
 
 /*
 	The plugin's frame. setup() writes the model (see the header of native/alaam_sim.c); call() runs one plugin code and
@@ -163,9 +177,10 @@ void AlaamNat::close()
 void AlaamNat::setup(real matrix adj, real scalar directed, real colvector y, real rowvector et, real rowvector ep,
 		real rowvector ec, real matrix cov)
 {
-	real scalar n, P, nt
-	real matrix E
-	real colvector yy
+	real scalar n, P, nt, k, nset, ndist, smode, hasfixed
+	real matrix E, Sk
+	real colvector yy, aux, fixed
+	pointer scalar pp
 
 	n = rows(adj)
 	P = cols(et)
@@ -177,8 +192,40 @@ void AlaamNat::setup(real matrix adj, real scalar directed, real colvector y, re
 	nt = rows(E)
 	E = (floor((E :- 1) / n) :+ 1), (mod(E :- 1, n) :+ 1)
 	yy = editmissing(y, -1)
-	blob = (ALAAM_PROTOCOL_NEEDED() \ n \ directed \ P \ nt \ rows(cov) \ J(10, 1, 0)) \ vec((et \ ep \ ec)) \ vec(E') \ yy
+	// auxiliary objects of the fit, set by the caller as Mata externals: setting networks (n x n tie matrices), distance
+	// matrices (n x n), the sampler (0 toggle, 1 zero-or-one) and the nodes whose outcome is held fixed (snowball)
+	nset = 0
+	while (findexternal("__nwalaam_set" + strofreal(nset + 1)) != NULL) nset++
+	ndist = 0
+	while (findexternal("__nwalaam_dist" + strofreal(ndist + 1)) != NULL) ndist++
+	smode = 0
+	pp = findexternal("__nwalaam_smode")
+	if (pp != NULL) smode = *pp
+	hasfixed = 0
+	fixed = J(n, 1, 0)
+	pp = findexternal("__nwalaam_fixed")
+	if (pp != NULL) {
+		fixed = *pp
+		hasfixed = 1
+	}
+	blob = (ALAAM_PROTOCOL_NEEDED() \ n \ directed \ P \ nt \ rows(cov) \ nset \ ndist \ smode \ hasfixed \ J(6, 1, 0)) \ vec((et \ ep \ ec)) \ vec(E') \ yy
 	if (rows(cov) > 0) blob = blob \ vec(cov')
+	for (k = 1; k <= nset; k++) {
+		pp = findexternal("__nwalaam_set" + strofreal(k))
+		Sk = (*pp) :!= 0
+		_diag(Sk, 0)
+		Sk = Sk :& ((*pp) :< .)
+		Sk = Sk :| Sk'
+		Sk = uppertriangle(Sk, 0)
+		E = selectindex(vec(Sk'))
+		E = (floor((E :- 1) / n) :+ 1), (mod(E :- 1, n) :+ 1)
+		blob = blob \ rows(E) \ vec(E')
+	}
+	for (k = 1; k <= ndist; k++) {
+		pp = findexternal("__nwalaam_dist" + strofreal(k))
+		blob = blob \ vec((*pp)')
+	}
+	if (hasfixed) blob = blob \ fixed
 	L = rows(blob)
 	nres = 0
 	if (L > st_nobs()) st_addobs(L - st_nobs())
@@ -200,9 +247,10 @@ real colvector AlaamNat::call(string scalar arg, real scalar nrows)
 	vars: the names of the covariates (rows of the covariate matrix are in the order of first use, returned in covnames).
 	Returns et, ep, ec (1 x P) and the coefficient names; errors with r(198).
 */
-void alaam_effects(string scalar spec, real scalar directed, real rowvector et, real rowvector ep, real rowvector ec,
-		string rowvector names, string rowvector covnames)
+void alaam_effects(string scalar spec, real scalar directed, real scalar twomode, real rowvector et, real rowvector ep, real rowvector ec,
+		string rowvector names, string rowvector covnames, string rowvector setnames, string rowvector distnames)
 {
+	string rowvector bip
 	string rowvector toks, un, dn
 	real rowvector uc, dc
 	string scalar tok, nm, arg, c, ps
@@ -238,6 +286,11 @@ void alaam_effects(string scalar spec, real scalar directed, real rowvector et, 
 		"diffindirect", "25", "0", "2", "" \
 		"alterbinarytwostar1", "26", "0", "2", "" \
 		"alterbinarytwostar2", "27", "0", "2", "" \
+		"fourcycle1", "28", "0", "0", "" \
+		"fourcycle2", "29", "0", "0", "" \
+		"settinghomophily", "40", "40", "3", "" \
+		"geographichomophily", "41", "41", "4", "" \
+		"contagiondist", "42", "0", "4", "" \
 		"sendermatch", "0", "131", "2", "" \
 		"sendermismatch", "0", "132", "2", "" \
 		"receivermatch", "0", "133", "2", "")
@@ -267,7 +320,11 @@ void alaam_effects(string scalar spec, real scalar directed, real rowvector et, 
 		"gwreceiver", "0", "123", "1", "0.693147180559945")
 	toks = tokens(subinstr(subinstr(spec, "(", " ( "), ")", " ) "))
 	// re-join name and (argument): tokens() with "()" parse chars gives name, "(", arg, ")"
-	et = J(1, 0, .); ep = et; ec = et; names = J(1, 0, ""); covnames = J(1, 0, "")
+	et = J(1, 0, .); ep = et; ec = et; names = J(1, 0, ""); covnames = J(1, 0, ""); setnames = J(1, 0, ""); distnames = J(1, 0, "")
+	// the effects defined for two-mode (bipartite) networks: those of the one-mode undirected list that do not need ties within a mode
+	bip = ("density", "activity", "twostar", "threestar", "gwactivity", "alter2star1", "alter2star2", "fourcycle1", "fourcycle2",
+		"ego", "alter", "samepartneractivity", "diffpartneractivity", "sameindirect", "diffindirect", "alterbinarytwostar1", "alterbinarytwostar2",
+		"settinghomophily", "geographichomophily")
 	k = 1
 	while (k <= cols(toks)) {
 		nm = strlower(strtrim(toks[k])); k++
@@ -288,6 +345,10 @@ void alaam_effects(string scalar spec, real scalar directed, real rowvector et, 
 		j = selectindex(tbl[., 1] :== nm)
 		if (rows(j) == 0) {
 			errprintf("{p 0 0 2}nwalaam: unknown effect {bf:%s}.{p_end}\n", nm)
+			exit(198)
+		}
+		if (twomode & !any(bip :== nm)) {
+			errprintf("{p 0 0 2}nwalaam: effect {bf:%s} is not available for two-mode networks (the effects for two-mode networks are: %s).{p_end}\n", nm, invtokens(bip))
 			exit(198)
 		}
 		code = strtoreal(tbl[j, (directed ? 3 : 2)])
@@ -312,6 +373,13 @@ void alaam_effects(string scalar spec, real scalar directed, real rowvector et, 
 				}
 			}
 		}
+		if (p >= 3) {
+			c = strtrim(arg)
+			if (c == "") {
+				errprintf("{p 0 0 2}nwalaam: effect {bf:%s} needs %s: %s(%s).{p_end}\n", nm, (p == 3 ? "a setting network" : "a distance matrix"), nm, (p == 3 ? "netname" : "matname"))
+				exit(198)
+			}
+		}
 		if (p == 2) {
 			c = strtrim(arg)
 			if (c == "") {
@@ -324,6 +392,16 @@ void alaam_effects(string scalar spec, real scalar directed, real rowvector et, 
 		if (p == 2) {
 			if (!any(covnames :== c)) covnames = covnames, c
 			ec = ec, selectindex(covnames :== c)
+			names = names, abbrev(nm + "_" + c, 32)
+		}
+		else if (p == 3) {
+			if (!any(setnames :== c)) setnames = setnames, c
+			ec = ec, selectindex(setnames :== c)
+			names = names, abbrev(nm + "_" + c, 32)
+		}
+		else if (p == 4) {
+			if (!any(distnames :== c)) distnames = distnames, c
+			ec = ec, selectindex(distnames :== c)
 			names = names, abbrev(nm + "_" + c, 32)
 		}
 		else if (p == 1 & hasarg) {
@@ -346,6 +424,16 @@ void alaam_effects(string scalar spec, real scalar directed, real rowvector et, 
 		errprintf("{p 0 0 2}nwalaam: an effect is listed twice.{p_end}\n")
 		exit(198)
 	}
+}
+
+// the nodes whose outcome is held at the observed value (outermost snowball zone), n x 1 of 0/1
+real colvector alaam_fixed(real scalar n)
+{
+	pointer scalar pp
+
+	pp = findexternal("__nwalaam_fixed")
+	if (pp == NULL) return(J(n, 1, 0))
+	return(*pp)
 }
 
 // logit without constant: Newton-Raphson; returns the coefficients (1 x P), missing when it does not converge, and the
@@ -618,7 +706,7 @@ void AlaamFit(real matrix adj, real scalar directed, real colvector y, real rowv
 	N.setup(adj, directed, y, et, ep, ec, cov)
 	zobs = AlaamStats(N, P)
 	D = AlaamDeltas(N, n, P)
-	ok = selectindex(y :< .)
+	ok = selectindex((y :< .) :& !alaam_fixed(n))
 	bmple = alaam_logit(D[ok, .], y[ok], conv)
 	dg = J(P, 7, .)
 	dg[., 1] = zobs'

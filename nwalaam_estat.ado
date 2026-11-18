@@ -45,20 +45,21 @@ program _nwalaam_gof, rclass
 	local effects `"`e(effects_spec)'"'
 	if "`noextra'" == "" & `"`extra'"' == "" {
 		if "`e(directed)'" == "directed" local extra "sender receiver reciprocity outstar2 instar2 mixedstar mixedsource mixedsink contagion contagionrecip transitive1 transitive3 transitived1 transitiveu1 cyclic1 cyclic3 alterinstar2 alteroutstar2"
+		else if "`e(twomode)'" == "twomode" local extra "twostar threestar alter2star1 alter2star2 fourcycle1 fourcycle2"
 		else local extra "twostar threestar alter2star1 triangle1 contagion alter2star2 partneractivity partnerpartner triangle2 triangle3"
 	}
 	if "`noextra'" != "" local extra
 	tempname TH
 	matrix `TH' = e(b)
 	local __P = colsof(`TH')
-	_nwalaam_prep `depvar' `netname', effects(`effects') extra(`extra')
+	_nwalaam_prep `depvar' `netname', effects(`effects') extra(`extra') mode(`=cond("`e(modeopt)'" == "", 1, `e(modeopt)')') zone(`e(zone)') sampler(`e(samplerarg)')
 	local __Pall : word count `__allnames'
-	mata: __nwalaam_n = rows(*(`netobj'->get_matrix()))
+	mata: __nwalaam_n = rows(__nwalaam_adj)
 	if `"`burnin'"' == "" local burnin = max(10000, 100 * `nodes')
 	if `"`interval'"' == "" local interval = max(1000, 10 * `nodes')
 	tempname OBS SIM
-	mata: st_matrix("`OBS'", AlaamGofStats(*(`netobj'->get_matrix()), `__dir', __nwalaam_y, __nwalaam_et, __nwalaam_ep, __nwalaam_ec, __nwalaam_cov))
-	mata: st_matrix("`SIM'", AlaamSim(*(`netobj'->get_matrix()), `__dir', __nwalaam_y, __nwalaam_et, __nwalaam_ep, __nwalaam_ec, __nwalaam_cov, ///
+	mata: st_matrix("`OBS'", AlaamGofStats(__nwalaam_adj, `__dir', __nwalaam_y, __nwalaam_et, __nwalaam_ep, __nwalaam_ec, __nwalaam_cov))
+	mata: st_matrix("`SIM'", AlaamSim(__nwalaam_adj, `__dir', __nwalaam_y, __nwalaam_et, __nwalaam_ep, __nwalaam_ec, __nwalaam_cov, ///
 		(st_matrix("`TH'"), J(1, `__Pall' - `__P', 0)), `nsim', `burnin', `interval', `__seed', 0))
 	capture mata: mata drop __nwalaam_*
 	tempname RES MAH

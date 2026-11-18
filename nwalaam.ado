@@ -1,4 +1,4 @@
-*! version 0.2.0  18nov2026 nwalaam
+*! version 0.3.0  18nov2026 nwalaam
 * Copyright (C) 2026 Thomas U. Grund
 * This file is part of nwalaam, a Stata package for autologistic actor attribute models (ALAAMs). It follows the
 * method of the ALAAMEE software (Stivala, Wang and Lomi; MIT licence) and is written independently.
@@ -28,7 +28,7 @@ program nwalaam, eclass
 		}
 	}
 	syntax [anything(name=args)] [, EFFects(string) MPLE METHod(string) SAITer(integer 500) RUNs(integer 30) ITERations(integer 50000) THIN(integer 100) ///
-		BURNin(integer 1000) PROPosals(integer 1000) LRate(real 0.01) SEED(string) START(name) *]
+		BURNin(integer 1000) PROPosals(integer 1000) LRate(real 0.01) SEED(string) START(name) MODE(integer 1) ZONE(string) SAMPler(string) *]
 	local __tabopts `"`options'"'
 	local method = lower(trim(`"`method'"'))
 	if "`mple'" != "" & "`method'" != "" & "`method'" != "mple" {
@@ -69,7 +69,7 @@ program nwalaam, eclass
 	_nwalaam_libcheck
 	gettoken depvar netname : args
 	local netname = trim("`netname'")
-	_nwalaam_prep `depvar' `netname', effects(`effects')
+	_nwalaam_prep `depvar' `netname', effects(`effects') mode(`mode') zone(`zone') sampler(`sampler')
 	local __P : word count `__names'
 	// start values: given as a 1 x P matrix, or (default) from Algorithm S
 	if "`start'" != "" {
@@ -93,7 +93,7 @@ program nwalaam, eclass
 	if `"`seed'"' == "" local __seed = floor(runiform() * 2147483646) + 1
 	else local __seed = `seed'
 	tempname B V DG RUNS TRC
-	capture noisily mata: AlaamFit(*(`netobj'->get_matrix()), `__dir', __nwalaam_y, __nwalaam_et, __nwalaam_ep, __nwalaam_ec, __nwalaam_cov, ///
+	capture noisily mata: AlaamFit(__nwalaam_adj, `__dir', __nwalaam_y, __nwalaam_et, __nwalaam_ep, __nwalaam_ec, __nwalaam_cov, ///
 		`=("`mple'" != "")', `runs', `iterations', `thin', `burnin', `proposals', `lrate', `__seed', `__seed' + 17, "`__S0'", "`B'", "`V'", "`DG'", "`RUNS'", "`TRC'", `=("`method'" == "sa")', `saiter')
 	local __rc = _rc
 	capture mata: mata drop __nwalaam_*
@@ -122,12 +122,17 @@ program nwalaam, eclass
 	ereturn post `B' `V', obs(`__ny')
 	ereturn local cmd "nwalaam"
 	ereturn local estat_cmd "nwalaam_estat"
-	ereturn local version "0.2.0"
+	ereturn local version "0.3.0"
 	ereturn local depvar "`depvar'"
 	ereturn local network "`netname'"
 	ereturn local effects "`__names'"
 	ereturn local effects_spec `"`effects'"'
 	ereturn local directed = cond(`__dir', "directed", "undirected")
+	ereturn local modeopt = cond(`__two', "`mode'", "")
+	ereturn local zone "`zone'"
+	ereturn local sampler = cond("`zone'" != "", "conditional (snowball)", cond("`sampler'" == "", "toggle", "`sampler'"))
+	ereturn local samplerarg "`sampler'"
+	ereturn local twomode = cond(`__two', "twomode", "onemode")
 	ereturn local method = cond("`mple'" != "", "mple", "`method'")
 	ereturn local title = cond("`mple'" != "", "Autologistic actor attribute model (maximum pseudo-likelihood)", cond("`method'" == "sa", "Autologistic actor attribute model (stochastic approximation)", "Autologistic actor attribute model (equilibrium expectation)"))
 	ereturn scalar N = `__ny'

@@ -47,7 +47,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#define ALAAM_PROTOCOL 4
+#define ALAAM_PROTOCOL 5
 #define HDR 16
 
 typedef struct {
@@ -58,6 +58,11 @@ typedef struct {
 	int *iofs, *iadj;           /* in neighbours, CSR (directed only) */
 	double **cov;
 	signed char *y;
+	signed char *fixed;         /* 1 = outcome kept at the observed value (outermost snowball zone) */
+	int nset, ndist, smode;     /* setting networks, distance matrices; sampler: 0 toggle, 1 zero-or-one */
+	int **sofs, **sadj;         /* setting networks, CSR */
+	double **dist;              /* distance matrices, n x n */
+	int *cnt;                   /* scratch (n), all zero between calls: common-neighbour counts */
 } Model;
 
 static int isarc(const Model *g, int i, int j) {
@@ -114,6 +119,8 @@ static double dir_f(int kind, double par, double n) {
 	  8 alter2star2 (indirect partner attribute) 9 partneractivity 10 partnerpartner 11 triangle1 12 triangle2 13 triangle3
 	  14 gwcontagion(a) 15 logcontagion 16 powercontagion(b) 17 ego(x) 18 alter(x) 19 same(c) 20 diff(c) 21 samecontagion(c)
 	  22 samepartneractivity(c) 23 diffpartneractivity(c) 24 sameindirect(c) 25 diffindirect(c) 26 alterbinarytwostar1(b) 27 alterbinarytwostar2(b)
+	  28 fourcycle1 29 fourcycle2 (two-mode networks, undirected otherwise) 40 settinghomophily(setting network) 41 geographichomophily(distance matrix)
+	  42 contagiondist(distance matrix); 40 and 41 also for directed networks
 	Directed (ties i -> j): 1 density 17 ego(x) and
 	  102 sender 103 receiver 104 reciprocity 105 instar2 106 instar3 107 outstar2 108 outstar3 109 mixedstar 110 mixedsource
 	  111 mixedsink 112 contagion 113 contagionrecip 114 transitive1 115 transitive3 116 transitived1 117 transitiveu1
@@ -127,6 +134,16 @@ static double change_stat(const Model *g, const signed char *A, int i, int e) {
 	const double *x = g->ecov[e] > 0 ? g->cov[g->ecov[e] - 1] : NULL;
 	if (type == 1) return 1.0;
 	if (type == 17) return MISS(x[i]) ? 0.0 : x[i];
+	if (type == 40) {
+		int s = g->ecov[e] - 1;
+		for (k = g->sofs[s][i]; k < g->sofs[s][i + 1]; k++) if (A[g->sadj[s][k]] == 1) d++;
+		return d;
+	}
+	if (type == 41) {
+		const double *dm = g->dist[g->ecov[e] - 1] + (size_t)i * (size_t)g->n;
+		for (k = 0; k < g->n; k++) if (k != i && A[k] == 1) delta += dm[k];
+		return delta;
+	}
 	if (!g->directed) {
 		di = OUTDEG(g, i);
 		switch (type) {
@@ -169,6 +186,28 @@ static double change_stat(const Model *g, const signed char *A, int i, int e) {
 				if (A[u] == 1) for (l = 0; l < k; l++) { int v = ONB(g, i, l); if (A[v] == 1 && isarc(g, u, v)) d++; }
 			}
 			return d;
+		case 28: case 29: {
+			int *c = g->cnt, nz = 0, *touched = NULL;
+			for (k = 0; k < di; k++) nz += OUTDEG(g, ONB(g, i, k));
+			touched = malloc((nz + 1) * sizeof(int));
+			nz = 0;
+			for (k = 0; k < di; k++) {
+				int u = ONB(g, i, k);
+				for (l = 0; l < OUTDEG(g, u); l++) { int v = ONB(g, u, l); if (v == i) continue; if (c[v]++ == 0) touched[nz++] = v; }
+			}
+			for (k = 0; k < nz; k++) {
+				int v = touched[k], p = c[v];
+				if (type == 28 || A[v] == 1) delta += p * (p - 1) / 2.0;
+				c[v] = 0;
+			}
+			free(touched);
+			return delta;
+		}
+		case 42: {
+			const double *dm = g->dist[g->ecov[e] - 1] + (size_t)i * (size_t)g->n;
+			for (k = 0; k < di; k++) { int u = ONB(g, i, k); if (A[u] == 1) delta += dm[u]; }
+			return delta;
+		}
 		case 14: return gw_like(g, A, i, 0, par);
 		case 15: return gw_like(g, A, i, 1, par);
 		case 16: return gw_like(g, A, i, 2, par);
@@ -351,10 +390,50 @@ static double rng_unif(Rng *r) { return (double)(rng_next(r) >> 11) * (1.0 / 900
 
 static Rng *cur_rng = NULL;   /* the generator of the running call */
 
+/* the zero-or-one sampler: a move to 0 or a move to 1 is chosen with probability 1/2 (when both are possible), then a node among the
+   nodes with outcome 1 (resp. 0) uniformly; the Hastings ratio corrects for the numbers of nodes of both kinds before and after */
+static double pdown_of(int D, int ne) { return D == 0 ? 0.0 : (D == ne ? 1.0 : 0.5); }
+static double sampler_zoo(const Model *g, signed char *A, const int *elig, int ne, const double *theta, int perform,
+		int mprop, double *S1, double *S0, double *cs) {
+	int m, e, k, acc = 0, no = 0, nz = 0;
+	int *ones = malloc((ne + 1) * sizeof(int)), *zeros = malloc((ne + 1) * sizeof(int)), *where = malloc(g->n * sizeof(int));
+	for (k = 0; k < ne; k++) { int i = elig[k]; if (A[i] == 1) { where[i] = no; ones[no++] = i; } else { where[i] = nz; zeros[nz++] = i; } }
+	for (e = 0; e < g->P; e++) { S1[e] = 0.0; S0[e] = 0.0; }
+	for (m = 0; m < mprop; m++) {
+		int D = no, to0, i, Dn;
+		double pd = pdown_of(D, ne), tot = 0.0, qf, qr;
+		to0 = pd >= 1.0 ? 1 : (pd <= 0.0 ? 0 : (rng_unif(cur_rng) < 0.5));
+		i = to0 ? ones[(int)(rng_unif(cur_rng) * no)] : zeros[(int)(rng_unif(cur_rng) * nz)];
+		if (to0) A[i] = 0;
+		for (e = 0; e < g->P; e++) { cs[e] = change_stat(g, A, i, e); tot += theta[e] * cs[e]; }
+		if (to0) {
+			Dn = D - 1; qf = pd / D; qr = (1.0 - pdown_of(Dn, ne)) / (ne - Dn);
+			tot = -tot;
+		}
+		else {
+			Dn = D + 1; qf = (1.0 - pd) / (ne - D); qr = pdown_of(Dn, ne) / Dn;
+		}
+		tot += log(qr / qf);
+		if (rng_unif(cur_rng) < exp(tot)) {
+			acc++;
+			if (perform) {
+				if (to0) { int w = where[i], last = ones[--no]; ones[w] = last; where[last] = w; where[i] = nz; zeros[nz++] = i; }
+				else { int w = where[i], last = zeros[--nz]; zeros[w] = last; where[last] = w; where[i] = no; ones[no++] = i; A[i] = 1; }
+			}
+			else if (to0) A[i] = 1;
+			for (e = 0; e < g->P; e++) { if (to0) S0[e] += cs[e]; else S1[e] += cs[e]; }
+		}
+		else if (to0) A[i] = 1;
+	}
+	free(ones); free(zeros); free(where);
+	return (double)acc / mprop;
+}
+
 /* the toggle sampler: mprop proposals; S1 and S0 are the sums of the change statistics of accepted moves to 1 and to 0 */
 static double sampler(const Model *g, signed char *A, const int *elig, int ne, const double *theta, int perform,
 		int mprop, double *S1, double *S0, double *cs) {
 	int m, e, acc = 0;
+	if (g->smode == 1) return sampler_zoo(g, A, elig, ne, theta, perform, mprop, S1, S0, cs);
 	for (e = 0; e < g->P; e++) { S1[e] = 0.0; S0[e] = 0.0; }
 	for (m = 0; m < mprop; m++) {
 		int i = elig[(int)(rng_unif(cur_rng) * ne)];
@@ -401,6 +480,10 @@ static int invert(const double *a, double *inv, int P) {
 static void model_free(Model *g) {
 	int k;
 	free(g->etype); free(g->epar); free(g->ecov); free(g->bits); free(g->oofs); free(g->oadj); free(g->iofs); free(g->iadj); free(g->y);
+	free(g->fixed); free(g->cnt);
+	for (k = 0; k < g->nset; k++) { free(g->sofs[k]); free(g->sadj[k]); }
+	for (k = 0; k < g->ndist; k++) free(g->dist[k]);
+	free(g->sofs); free(g->sadj); free(g->dist);
 	if (g->cov) { for (k = 0; k < g->ncov; k++) free(g->cov[k]); free(g->cov); }
 }
 
@@ -414,6 +497,7 @@ static int model_read(Model *g, long L) {
 	for (k = 0; k < HDR; k++) { ST_double v; SF_vdata(1, (ST_int)(k + 1), &v); h[k] = v; }
 	if ((int)h[0] != ALAAM_PROTOCOL) return 198;
 	n = (int)h[1]; g->n = n; g->directed = (int)h[2]; P = (int)h[3]; g->P = P; nt = (long)h[4]; g->ncov = (int)h[5];
+	g->nset = (int)h[6]; g->ndist = (int)h[7]; g->smode = (int)h[8];
 	if (n < 1 || P < 1 || P > 1000 || nt < 0) return 198;
 	pos = HDR;
 	g->etype = calloc(P, sizeof(int)); g->epar = calloc(P, sizeof(double)); g->ecov = calloc(P, sizeof(int));
@@ -456,7 +540,42 @@ static int model_read(Model *g, long L) {
 		g->cov[k] = malloc(n * sizeof(double));
 		for (i = 0; i < n; i++) { ST_double v; SF_vdata(1, (ST_int)(++pos), &v); g->cov[k][i] = v; }
 	}
-	for (e = 0; e < P; e++) if (g->ecov[e] > g->ncov) return 198;
+	g->sofs = calloc(g->nset + 1, sizeof(int *)); g->sadj = calloc(g->nset + 1, sizeof(int *)); g->dist = calloc(g->ndist + 1, sizeof(double *));
+	for (k = 0; k < g->nset; k++) {
+		long m, q;
+		int *sa, *sb, *ofs, *adj, *fill;
+		ST_double v;
+		SF_vdata(1, (ST_int)(++pos), &v); m = (long)v;
+		sa = malloc((m + 1) * sizeof(int)); sb = malloc((m + 1) * sizeof(int));
+		ofs = calloc(n + 1, sizeof(int)); fill = calloc(n + 1, sizeof(int));
+		for (q = 0; q < m; q++) {
+			ST_double a, b;
+			SF_vdata(1, (ST_int)(++pos), &a); SF_vdata(1, (ST_int)(++pos), &b);
+			sa[q] = (int)a - 1; sb[q] = (int)b - 1;
+			if (sa[q] < 0 || sb[q] < 0 || sa[q] >= n || sb[q] >= n || sa[q] == sb[q]) { free(sa); free(sb); free(ofs); free(fill); return 198; }
+			ofs[sa[q] + 1]++; ofs[sb[q] + 1]++;
+		}
+		for (i = 0; i < n; i++) ofs[i + 1] += ofs[i];
+		adj = malloc((ofs[n] + 1) * sizeof(int));
+		for (q = 0; q < m; q++) { adj[ofs[sa[q]] + fill[sa[q]]++] = sb[q]; adj[ofs[sb[q]] + fill[sb[q]]++] = sa[q]; }
+		g->sofs[k] = ofs; g->sadj[k] = adj;
+		free(sa); free(sb); free(fill);
+	}
+	for (k = 0; k < g->ndist; k++) {
+		long q, nn = (long)n * (long)n;
+		g->dist[k] = malloc(nn * sizeof(double));
+		if (!g->dist[k]) return 909;
+		for (q = 0; q < nn; q++) { ST_double v; SF_vdata(1, (ST_int)(++pos), &v); g->dist[k][q] = (MISS(v) ? 0.0 : v); }
+	}
+	g->fixed = calloc(n, 1);
+	if ((int)h[9] == 1) for (i = 0; i < n; i++) { ST_double v; SF_vdata(1, (ST_int)(++pos), &v); g->fixed[i] = (v > 0.5); }
+	g->cnt = calloc(n + 1, sizeof(int));
+	for (e = 0; e < P; e++) {
+		int t = g->etype[e];
+		if (t == 40) { if (g->ecov[e] < 1 || g->ecov[e] > g->nset) return 198; }
+		else if (t == 41 || t == 42) { if (g->ecov[e] < 1 || g->ecov[e] > g->ndist) return 198; }
+		else if (g->ecov[e] > g->ncov) return 198;
+	}
 	if (pos > L) return 198;
 	return 0;
 }
@@ -464,7 +583,7 @@ static int model_read(Model *g, long L) {
 static int eligible(const Model *g, int **elig) {
 	int i, ne = 0;
 	*elig = malloc(g->n * sizeof(int));
-	for (i = 0; i < g->n; i++) if (g->y[i] >= 0) (*elig)[ne++] = i;
+	for (i = 0; i < g->n; i++) if (g->y[i] >= 0 && !g->fixed[i]) (*elig)[ne++] = i;
 	return ne;
 }
 

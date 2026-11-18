@@ -1,11 +1,11 @@
-*! version 0.2.0  18nov2026 _nwalaam_simulate
+*! version 0.3.0  18nov2026 _nwalaam_simulate
 * Copyright (C) 2026 Thomas U. Grund. Part of nwalaam; GNU GPL-3 (see LICENSE).
 * nwalaam simulate: draws outcome vectors from the model (after a fit, or from given coefficients)
 capture program drop _nwalaam_simulate
 program _nwalaam_simulate, rclass
 	version 14
 	syntax [anything(name=args)] [, EFFects(string) THETA(name) NSIM(integer 1000) BURNin(string) INTERval(string) SEED(string) ///
-		GENerate(name) FRame(name) REPlace]
+		GENerate(name) FRame(name) REPlace MODE(integer 1) ZONE(string) SAMPler(string)]
 	_nwalaam_libcheck
 	local usefit = 0
 	if `"`args'"' == "" {
@@ -18,6 +18,9 @@ program _nwalaam_simulate, rclass
 		local depvar `"`e(depvar)'"'
 		local netname `"`e(network)'"'
 		local effects `"`e(effects_spec)'"'
+		local mode = cond("`e(modeopt)'" == "", 1, `e(modeopt)')
+		local zone `"`e(zone)'"'
+		local sampler `"`e(samplerarg)'"'
 	}
 	else {
 		gettoken depvar netname : args
@@ -54,7 +57,7 @@ program _nwalaam_simulate, rclass
 		matrix `TH' = `theta'
 	}
 	else matrix `TH' = e(b)
-	_nwalaam_prep `depvar' `netname', effects(`effects')
+	_nwalaam_prep `depvar' `netname', effects(`effects') mode(`mode') zone(`zone') sampler(`sampler')
 	local __P : word count `__names'
 	if colsof(`TH') != `__P' {
 		di as error "the coefficient matrix has `=colsof(`TH')' values but the model has `__P' effects"
@@ -72,7 +75,7 @@ program _nwalaam_simulate, rclass
 		}
 	}
 	tempname SIM
-	mata: st_matrix("`SIM'", AlaamSim(*(`netobj'->get_matrix()), `__dir', __nwalaam_y, __nwalaam_et, __nwalaam_ep, __nwalaam_ec, __nwalaam_cov, ///
+	mata: st_matrix("`SIM'", AlaamSim(__nwalaam_adj, `__dir', __nwalaam_y, __nwalaam_et, __nwalaam_ep, __nwalaam_ec, __nwalaam_cov, ///
 		st_matrix("`TH'"), `nsim', `burnin', `interval', `__seed', 1))
 	local __rc = _rc
 	if `__rc' {
@@ -107,7 +110,7 @@ program _nwalaam_simulate, rclass
 	}
 	// statistics of the draws for the model's effects (mean), compared with the observed ones
 	tempname OBS MN
-	mata: st_matrix("`OBS'", AlaamGofStats(*(`netobj'->get_matrix()), `__dir', __nwalaam_y, __nwalaam_et, __nwalaam_ep, __nwalaam_ec, __nwalaam_cov))
+	mata: st_matrix("`OBS'", AlaamGofStats(__nwalaam_adj, `__dir', __nwalaam_y, __nwalaam_et, __nwalaam_ep, __nwalaam_ec, __nwalaam_cov))
 	matrix colnames `OBS' = `__names'
 	capture mata: mata drop __nwalaam_*
 	di as text "Simulated " as result `nsim' as text " outcome vectors on " as result `nodes' as text " actors" _c
