@@ -47,7 +47,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#define ALAAM_PROTOCOL 3
+#define ALAAM_PROTOCOL 4
 #define HDR 16
 
 typedef struct {
@@ -101,15 +101,31 @@ static double gw_like(const Model *g, const signed char *A, int i, int kind, dou
 	return delta;
 }
 
+/* f(n) of the gw (kind 0), log (1) and power (2) contagion statistics of a node with the outcome and n ties to nodes with the outcome */
+static double dir_f(int kind, double par, double n) {
+	if (kind == 0) return exp(-par * n);
+	if (kind == 1) return log(n + 1.0);
+	return pow(n, 1.0 / par);
+}
+static double dir_n(const Model *g, const signed char *A, int j) {
+	int k, c = 0;
+	for (k = 0; k < OUTDEG(g, j); k++) if (A[ONB(g, j, k)] == 1) c++;
+	for (k = 0; k < INDEG(g, j); k++) if (A[INB(g, j, k)] == 1) c++;
+	return (double)c;
+}
+
 /*
 	Change statistic of one effect for node i; A[i] must be 0 on entry.
 	Undirected: 1 density 2 activity 3 twostar 4 threestar 5 gwactivity(a) 6 contagion 7 alter2star1 (partner activity two-path)
 	  8 alter2star2 (indirect partner attribute) 9 partneractivity 10 partnerpartner 11 triangle1 12 triangle2 13 triangle3
 	  14 gwcontagion(a) 15 logcontagion 16 powercontagion(b) 17 ego(x) 18 alter(x) 19 same(c) 20 diff(c) 21 samecontagion(c)
+	  22 samepartneractivity(c) 23 diffpartneractivity(c) 24 sameindirect(c) 25 diffindirect(c) 26 alterbinarytwostar1(b) 27 alterbinarytwostar2(b)
 	Directed (ties i -> j): 1 density 17 ego(x) and
 	  102 sender 103 receiver 104 reciprocity 105 instar2 106 instar3 107 outstar2 108 outstar3 109 mixedstar 110 mixedsource
 	  111 mixedsink 112 contagion 113 contagionrecip 114 transitive1 115 transitive3 116 transitived1 117 transitiveu1
 	  118 cyclic1 119 cyclic3 120 alterin2star2 121 alterout2star2 122 gwsender(a) 123 gwreceiver(a) 124 alter(x)
+	  125 gwcontagion(a) 126 logcontagion 127 powercontagion(b) 128 same(c) 129 diff(c) 130 samecontagion(c) 131 sendermatch(c)
+	  132 sendermismatch(c) 133 receivermatch(c) 134 receivermismatch(c) 135 reciprocitymatch(c) 136 reciprocitymismatch(c)
 */
 static double change_stat(const Model *g, const signed char *A, int i, int e) {
 	int type = g->etype[e], k, l, d = 0, di;
@@ -163,6 +179,38 @@ static double change_stat(const Model *g, const signed char *A, int i, int e) {
 		case 15: return gw_like(g, A, i, 1, par);
 		case 16: return gw_like(g, A, i, 2, par);
 		case 18: for (k = 0; k < di; k++) { double v = x[ONB(g, i, k)]; if (!MISS(v)) delta += v; } return delta;
+		case 22: case 23:
+			if (MISS(x[i])) return 0.0;
+			for (k = 0; k < di; k++) {
+				int u = ONB(g, i, k);
+				for (l = 0; l < OUTDEG(g, u); l++) {
+					int v = ONB(g, u, l);
+					if (v == i || MISS(x[v])) continue;
+					if ((type == 22) == (x[v] == x[i])) d++;
+				}
+			}
+			return d;
+		case 24: case 25:
+			if (MISS(x[i])) return 0.0;
+			for (k = 0; k < di; k++) {
+				int u = ONB(g, i, k);
+				for (l = 0; l < OUTDEG(g, u); l++) {
+					int v = ONB(g, u, l);
+					if (v == i || A[v] != 1 || MISS(x[v])) continue;
+					if ((type == 24) == (x[v] == x[i])) d++;
+				}
+			}
+			return d;
+		case 26:
+			for (k = 0; k < di; k++) { int u = ONB(g, i, k); if (!MISS(x[u]) && x[u] == 1.0) delta += OUTDEG(g, u) - 1; }
+			return delta;
+		case 27:
+			for (k = 0; k < di; k++) {
+				int u = ONB(g, i, k);
+				if (MISS(x[u]) || x[u] != 1.0) continue;
+				for (l = 0; l < OUTDEG(g, u); l++) { int v = ONB(g, u, l); if (v != i && A[v] == 1) d++; }
+			}
+			return d;
 		case 19: case 20: case 21:
 			if (MISS(x[i])) return 0.0;
 			for (k = 0; k < di; k++) {
@@ -235,6 +283,46 @@ static double change_stat(const Model *g, const signed char *A, int i, int e) {
 			return d;
 		case 122: return exp(-par * o);
 		case 123: return exp(-par * in);
+		case 125: case 126: case 127: {
+			/* gw/log/power contagion, directed: n(j) = the ties of j to nodes with the outcome (a mutual tie counts twice) */
+			int kind = type - 125;
+			double ni = 0.0;
+			for (k = 0; k < o; k++) if (A[ONB(g, i, k)] == 1) ni += 1.0;
+			for (k = 0; k < in; k++) if (A[INB(g, i, k)] == 1) ni += 1.0;
+			delta = dir_f(kind, par, ni);
+			for (k = 0; k < o; k++) {
+				int j = ONB(g, i, k);
+				if (A[j] != 1) continue;
+				{ double nj = dir_n(g, A, j), m = 1.0 + (isarc(g, j, i) ? 1.0 : 0.0); delta += dir_f(kind, par, nj + m) - dir_f(kind, par, nj); }
+			}
+			for (k = 0; k < in; k++) {
+				int j = INB(g, i, k);
+				if (A[j] != 1 || isarc(g, i, j)) continue;
+				{ double nj = dir_n(g, A, j); delta += dir_f(kind, par, nj + 1.0) - dir_f(kind, par, nj); }
+			}
+			return delta;
+		}
+		case 128: case 129: case 130:
+			if (MISS(x[i])) return 0.0;
+			for (k = 0; k < o + in; k++) {
+				int u = k < o ? ONB(g, i, k) : INB(g, i, k - o);
+				if (MISS(x[u])) continue;
+				if (type == 128 && x[u] == x[i]) d++;
+				else if (type == 129 && x[u] != x[i]) d++;
+				else if (type == 130 && x[u] == x[i] && A[u] == 1) d++;
+			}
+			return d;
+		case 131: case 132: case 133: case 134: case 135: case 136: {
+			int n1 = (type == 133 || type == 134) ? in : o, mism = (type == 132 || type == 134 || type == 136);
+			if (MISS(x[i])) return 0.0;
+			for (k = 0; k < n1; k++) {
+				int u = (type == 133 || type == 134) ? INB(g, i, k) : ONB(g, i, k);
+				if (MISS(x[u])) continue;
+				if ((type == 135 || type == 136) && !isarc(g, u, i)) continue;
+				if (mism ? (x[u] != x[i]) : (x[u] == x[i])) d++;
+			}
+			return d;
+		}
 		case 124:
 			for (k = 0; k < o; k++) { double v = x[ONB(g, i, k)]; if (!MISS(v)) delta += v; }
 			for (k = 0; k < in; k++) { double v = x[INB(g, i, k)]; if (!MISS(v)) delta += v; }

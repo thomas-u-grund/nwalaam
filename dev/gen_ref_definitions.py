@@ -11,7 +11,7 @@ out = sys.argv[1]
 random.seed(20261118)
 
 
-def z_und(name, par, A, y, c, k):
+def z_und(name, par, A, y, c, k, b):
     n = len(y)
     N = [[j for j in range(n) if A[i][j]] for i in range(n)]
     d = [len(x) for x in N]
@@ -47,10 +47,18 @@ def z_und(name, par, A, y, c, k):
     if name == "same_k": return sum(1 for i in ones for u in N[i] if k[u] == k[i])
     if name == "diff_k": return sum(1 for i in ones for u in N[i] if k[u] != k[i])
     if name == "samecontagion_k": return sum(1 for i, j in pairs if y[i] and y[j] and k[i] == k[j])
+    # two-paths i-u-v (v != i) between the outcome node i and any v: with the same / a different category of i and v
+    paths = [(i, u, v) for i in range(n) for u in N[i] for v in N[u] if v != i]
+    if name == "samepartneractivity_k": return sum(1 for i, u, v in paths if y[i] and k[i] == k[v])
+    if name == "diffpartneractivity_k": return sum(1 for i, u, v in paths if y[i] and k[i] != k[v])
+    if name == "sameindirect_k": return sum(1 for i, u, v in paths if y[i] and y[v] and i < v and k[i] == k[v])
+    if name == "diffindirect_k": return sum(1 for i, u, v in paths if y[i] and y[v] and i < v and k[i] != k[v])
+    if name == "alterbinarytwostar1_b": return sum(1 for i, u, v in paths if y[i] and b[u])
+    if name == "alterbinarytwostar2_b": return sum(1 for i, u, v in paths if y[i] and b[u] and y[v] and i < v)
     raise KeyError(name)
 
 
-def z_dir(name, par, A, y, c, k):
+def z_dir(name, par, A, y, c, k, b):
     n = len(y)
     out_ = [[j for j in range(n) if A[i][j]] for i in range(n)]
     in_ = [[j for j in range(n) if A[j][i]] for i in range(n)]
@@ -85,6 +93,20 @@ def z_dir(name, par, A, y, c, k):
     if name == "gwreceiver": return sum(math.exp(-par * ii[i]) for i in ones)
     if name == "ego_c": return sum(c[i] for i in ones)
     if name == "alter_c": return sum(sum(c[u] for u in out_[i]) + sum(c[u] for u in in_[i]) for i in ones)
+    # n_i: the number of ties of i to nodes with the outcome (a mutual tie counts twice, as in contagion)
+    nn = [sum(y[u] for u in out_[i]) + sum(y[u] for u in in_[i]) for i in range(n)]
+    if name == "gwcontagion": return sum(math.exp(-par * nn[i]) for i in ones)
+    if name == "logcontagion": return sum(math.log(nn[i] + 1) for i in ones)
+    if name == "powercontagion": return sum(nn[i] ** (1.0 / par) for i in ones)
+    if name == "same_k": return sum(1 for i in ones for u in out_[i] + in_[i] if k[u] == k[i])
+    if name == "diff_k": return sum(1 for i in ones for u in out_[i] + in_[i] if k[u] != k[i])
+    if name == "samecontagion_k": return sum(1 for i in range(n) for u in out_[i] if y[i] and y[u] and k[i] == k[u])
+    if name == "sendermatch_k": return sum(1 for i in ones for u in out_[i] if k[u] == k[i])
+    if name == "sendermismatch_k": return sum(1 for i in ones for u in out_[i] if k[u] != k[i])
+    if name == "receivermatch_k": return sum(1 for i in ones for u in in_[i] if k[u] == k[i])
+    if name == "receivermismatch_k": return sum(1 for i in ones for u in in_[i] if k[u] != k[i])
+    if name == "reciprocitymatch_k": return sum(1 for i in ones for u in out_[i] if A[u][i] and k[u] == k[i])
+    if name == "reciprocitymismatch_k": return sum(1 for i in ones for u in out_[i] if A[u][i] and k[u] != k[i])
     raise KeyError(name)
 
 
@@ -100,11 +122,12 @@ def write_case(name, n, directed, p, effects):
     y = [1 if random.random() < 0.4 else 0 for _ in range(n)]
     c = [round(random.gauss(0, 1), 4) for _ in range(n)]
     k = [random.randint(1, 3) for _ in range(n)]
+    b = [random.randint(0, 1) for _ in range(n)]
     z = z_dir if directed else z_und
     with open("%s/%s_edges.csv" % (out, name), "w") as f:
         f.write("from,to\n" + "".join("%d,%d\n" % e for e in edges))
     with open("%s/%s_nodes.csv" % (out, name), "w") as f:
-        f.write("y,c,k\n" + "".join("%d,%s,%d\n" % (y[i], c[i], k[i]) for i in range(n)))
+        f.write("y,c,k,b\n" + "".join("%d,%s,%d,%d\n" % (y[i], c[i], k[i], b[i]) for i in range(n)))
     with open("%s/%s_delta.csv" % (out, name), "w") as f:
         f.write(",".join(e[0] if e[1] is None else "%s_%s" % (e[0], e[1]) for e in effects) + "\n")
         for i in range(n):
@@ -113,7 +136,7 @@ def write_case(name, n, directed, p, effects):
             row = []
             for nm, par in effects:
                 base = nm
-                row.append(repr(float(z(base, par, A, y1, c, k) - z(base, par, A, y0, c, k))))
+                row.append(repr(float(z(base, par, A, y1, c, k, b) - z(base, par, A, y0, c, k, b))))
             f.write(",".join(row) + "\n")
     print(name, n, len(edges), "ties,", sum(y), "ones")
 
@@ -121,12 +144,17 @@ def write_case(name, n, directed, p, effects):
 und = [("density", None), ("activity", None), ("twostar", None), ("threestar", None), ("gwactivity", 0.5), ("contagion", None),
        ("alter2star1", None), ("alter2star2", None), ("partneractivity", None), ("partnerpartner", None), ("triangle1", None),
        ("triangle2", None), ("triangle3", None), ("gwcontagion", 0.5), ("logcontagion", None), ("powercontagion", 2.0),
-       ("ego_c", None), ("alter_c", None), ("same_k", None), ("diff_k", None), ("samecontagion_k", None)]
+       ("ego_c", None), ("alter_c", None), ("same_k", None), ("diff_k", None), ("samecontagion_k", None),
+       ("samepartneractivity_k", None), ("diffpartneractivity_k", None), ("sameindirect_k", None), ("diffindirect_k", None),
+       ("alterbinarytwostar1_b", None), ("alterbinarytwostar2_b", None)]
 dire = [("density", None), ("sender", None), ("receiver", None), ("reciprocity", None), ("instar2", None), ("instar3", None),
         ("outstar2", None), ("outstar3", None), ("mixedstar", None), ("mixedsource", None), ("mixedsink", None), ("contagion", None),
         ("contagionrecip", None), ("transitive1", None), ("transitive3", None), ("transitived1", None), ("transitiveu1", None),
         ("cyclic1", None), ("cyclic3", None), ("alterinstar2", None), ("alteroutstar2", None), ("gwsender", 0.5), ("gwreceiver", 0.5),
-        ("ego_c", None), ("alter_c", None)]
+        ("ego_c", None), ("alter_c", None),
+        ("gwcontagion", 0.5), ("logcontagion", None), ("powercontagion", 2.0), ("same_k", None), ("diff_k", None), ("samecontagion_k", None),
+        ("sendermatch_k", None), ("sendermismatch_k", None), ("receivermatch_k", None), ("receivermismatch_k", None),
+        ("reciprocitymatch_k", None), ("reciprocitymismatch_k", None)]
 write_case("und_a", 26, False, 0.2, und)
 write_case("und_b", 18, False, 0.35, und)
 write_case("dir_a", 22, True, 0.15, dire)

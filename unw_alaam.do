@@ -100,7 +100,7 @@ real scalar AlaamNativeAvailable()
 	return(fileexists(p))
 }
 
-real scalar ALAAM_PROTOCOL_NEEDED() return(3)
+real scalar ALAAM_PROTOCOL_NEEDED() return(4)
 
 /*
 	The plugin's frame. setup() writes the model (see the header of native/alaam_sim.c); call() runs one plugin code and
@@ -210,7 +210,8 @@ void alaam_effects(string scalar spec, real scalar directed, real rowvector et, 
 	string matrix tbl
 
 	// name, undirected code, directed code, kind (0 none, 1 parameter (alpha/beta), 2 covariate), default parameter
-	tbl = ("density", "1", "1", "0", "" \
+	tbl = J(0, 5, "")
+	tbl = tbl \ ("density", "1", "1", "0", "" \
 		"activity", "2", "0", "0", "" \
 		"twostar", "3", "0", "0", "" \
 		"threestar", "4", "0", "0", "" \
@@ -219,26 +220,38 @@ void alaam_effects(string scalar spec, real scalar directed, real rowvector et, 
 		"alter2star1", "7", "0", "0", "" \
 		"alter2star2", "8", "0", "0", "" \
 		"partneractivity", "9", "0", "0", "" \
-		"partnerpartner", "10", "0", "0", "" \
-		"triangle1", "11", "0", "0", "" \
+		"partnerpartner", "10", "0", "0", "")
+	tbl = tbl \ ("triangle1", "11", "0", "0", "" \
 		"triangle2", "12", "0", "0", "" \
 		"triangle3", "13", "0", "0", "" \
-		"gwcontagion", "14", "0", "1", "0.693147180559945" \
-		"logcontagion", "15", "0", "0", "" \
-		"powercontagion", "16", "0", "1", "2" \
+		"gwcontagion", "14", "125", "1", "0.693147180559945" \
+		"logcontagion", "15", "126", "0", "" \
+		"powercontagion", "16", "127", "1", "2" \
 		"ego", "17", "17", "2", "" \
 		"alter", "18", "124", "2", "" \
-		"same", "19", "0", "2", "" \
-		"diff", "20", "0", "2", "" \
-		"samecontagion", "21", "0", "2", "" \
+		"same", "19", "128", "2", "" \
+		"diff", "20", "129", "2", "")
+	tbl = tbl \ ("samecontagion", "21", "130", "2", "" \
+		"samepartneractivity", "22", "0", "2", "" \
+		"diffpartneractivity", "23", "0", "2", "" \
+		"sameindirect", "24", "0", "2", "" \
+		"diffindirect", "25", "0", "2", "" \
+		"alterbinarytwostar1", "26", "0", "2", "" \
+		"alterbinarytwostar2", "27", "0", "2", "" \
+		"sendermatch", "0", "131", "2", "" \
+		"sendermismatch", "0", "132", "2", "" \
+		"receivermatch", "0", "133", "2", "")
+	tbl = tbl \ ("receivermismatch", "0", "134", "2", "" \
+		"reciprocitymatch", "0", "135", "2", "" \
+		"reciprocitymismatch", "0", "136", "2", "" \
 		"sender", "0", "102", "0", "" \
 		"receiver", "0", "103", "0", "" \
 		"reciprocity", "0", "104", "0", "" \
 		"instar2", "0", "105", "0", "" \
 		"instar3", "0", "106", "0", "" \
 		"outstar2", "0", "107", "0", "" \
-		"outstar3", "0", "108", "0", "" \
-		"mixedstar", "0", "109", "0", "" \
+		"outstar3", "0", "108", "0", "")
+	tbl = tbl \ ("mixedstar", "0", "109", "0", "" \
 		"mixedsource", "0", "110", "0", "" \
 		"mixedsink", "0", "111", "0", "" \
 		"contagionrecip", "0", "113", "0", "" \
@@ -247,8 +260,8 @@ void alaam_effects(string scalar spec, real scalar directed, real rowvector et, 
 		"transitived1", "0", "116", "0", "" \
 		"transitiveu1", "0", "117", "0", "" \
 		"cyclic1", "0", "118", "0", "" \
-		"cyclic3", "0", "119", "0", "" \
-		"alterinstar2", "0", "120", "0", "" \
+		"cyclic3", "0", "119", "0", "")
+	tbl = tbl \ ("alterinstar2", "0", "120", "0", "" \
 		"alteroutstar2", "0", "121", "0", "" \
 		"gwsender", "0", "122", "1", "0.693147180559945" \
 		"gwreceiver", "0", "123", "1", "0.693147180559945")

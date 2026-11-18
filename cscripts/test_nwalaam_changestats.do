@@ -19,15 +19,15 @@ foreach c in und_a und_b dir_a dir_b {
 	local dir = (substr("`c'", 1, 3) == "dir")
 	quietly import delimited "dev/ref/`c'_nodes.csv", clear asdouble
 	local n = _N
-	mata: Y = st_data(., "y"); CC = st_data(., "c")'; KK = st_data(., "k")'
+	mata: Y = st_data(., "y"); CC = st_data(., "c")'; KK = st_data(., "k")'; BB = st_data(., "b")'
 	quietly import delimited "dev/ref/`c'_edges.csv", clear asdouble
 	mata: A = build_adj(st_data(., ("from", "to")), `n', `dir')
 	quietly import delimited "dev/ref/`c'_delta.csv", clear asdouble
 	unab names : _all
 	mata: REF = st_data(., .)
 	// effect codes (nwalaam.ado / alaam_sim.c): the names of the fixture columns in order
-	local und "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21"
-	local dire "1 102 103 104 105 106 107 108 109 110 111 112 113 114 115 116 117 118 119 120 121 122 123 17 124"
+	local und "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27"
+	local dire "1 102 103 104 105 106 107 108 109 110 111 112 113 114 115 116 117 118 119 120 121 122 123 17 124 125 126 127 128 129 130 131 132 133 134 135 136"
 	mata: st_local("nmcols", strofreal(cols(REF)))
 	if `dir' mata: ET = strtoreal(tokens("`dire'"))
 	else mata: ET = strtoreal(tokens("`und'"))
@@ -40,8 +40,9 @@ foreach c in und_a und_b dir_a dir_b {
 		if regexm("`nm'", "^powercontagion") mata: EP[`k'] = 2
 		if regexm("`nm'", "_c$") mata: EC[`k'] = 1
 		if regexm("`nm'", "_k$") mata: EC[`k'] = 2
+		if regexm("`nm'", "_b$") mata: EC[`k'] = 3
 	}
-	mata: AlaamChangeStats(A, `dir', Y, ET, EP, EC, (CC \ KK), D = ., z = .)
+	mata: AlaamChangeStats(A, `dir', Y, ET, EP, EC, (CC \ KK \ BB), D = ., z = .)
 	mata: st_numscalar("maxdiff", max(abs(D - REF)))
 	mata: st_numscalar("maxrow", select(1::cols(REF), colmax(abs(D - REF))' :== max(abs(D - REF)))[1])
 	di "`c': `nmcols' effects, `n' nodes: max abs difference plugin - definition = " maxdiff ""
