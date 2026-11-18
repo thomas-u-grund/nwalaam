@@ -166,6 +166,19 @@ program _nwalaam_mcmcdiag, rclass
 	}
 	local w1 = `w' + 1
 	di
+	if "`e(method)'" == "sa" {
+		di as txt "Stochastic-approximation diagnostics: " as res e(repetitions) as txt " repetition(s) of the three phases, " as res trim(string(e(proposals),"%12.0fc")) as txt " proposals per iteration, " as res trim(string(4*e(saiter),"%12.0fc")) as txt " iterations in the final phase"
+		di as txt "{hline `w1'}{c TT}{hline 40}"
+		di as txt %`w's "Parameter" " {c |}" %10s "Estimate" %10s "t" %10s "|t| max" %10s "AC dz"
+		di as txt "{hline `w1'}{c +}{hline 40}"
+		forvalues k = 1/`P' {
+			local nm : word `k' of `names'
+			di as txt %`w's abbrev("`nm'", `w') " {c |}" as res %10.4f `SUM'[`k', 1] %10.4f `SUM'[`k', 3] %10.4f `SUM'[`k', 4] %10.3f `SUM'[`k', 7]
+		}
+		di as txt "{hline `w1'}{c BT}{hline 40}"
+		di as txt "{p 0 0 2}t is the convergence t-ratio, mean(dz)/sd(dz) over the iterations of the final phase after a burn-in of one tenth, where dz is the difference between the simulated and the observed statistics; |t| below 0.1 counts as converged (the estimation is repeated, up to 20 times, until it is reached). AC is the lag-1 autocorrelation of dz.{p_end}"
+	}
+	else {
 	di as txt "Equilibrium-expectation diagnostics: " as res e(runs_used) as txt " runs used of " as res e(runs) as txt ", " as res trim(string(e(iterations),"%12.0fc")) as txt " iterations each, thinned to every " as res e(thin) as txt ", burn-in " as res trim(string(e(burnin),"%12.0fc"))
 	di as txt "Acceptance rate " as res %5.3f e(acceptance)
 	di as txt "{hline `w1'}{c TT}{hline 66}"
@@ -177,11 +190,13 @@ program _nwalaam_mcmcdiag, rclass
 	}
 	di as txt "{hline `w1'}{c BT}{hline 66}"
 	di as txt "{p 0 0 2}t is the convergence t-ratio of a run, mean(dzA)/sd(dzA) over the saved iterations after the burn-in; |t| <= `threshold' counts as converged. AC is the lag-1 autocorrelation of the saved (thinned) values of the coefficient and of dzA; values near 1 mean the thinning interval is too short for the number of runs to give independent information.{p_end}"
+	}
 	if "`plot'" != "" {
 		if `run' != 1 {
 			di as txt "(only the trace of the first run is stored; run() ignored)"
 		}
-		_nwalaam_traceplot, trace(`TR1') p(`P') names(`names') thin(`=e(thin)') burnin(`=e(burnin)') name(`name')
+		if "`e(method)'" == "sa" _nwalaam_traceplot, trace(`TR1') p(`P') names(`names') thin(1) burnin(`=ceil(0.1*4*e(saiter))') name(`name') dzonly
+		else _nwalaam_traceplot, trace(`TR1') p(`P') names(`names') thin(`=e(thin)') burnin(`=e(burnin)') name(`name')
 	}
 	return scalar runs_used = e(runs_used)
 	return scalar threshold = `threshold'
@@ -190,7 +205,7 @@ end
 
 capture program drop _nwalaam_traceplot
 program _nwalaam_traceplot
-	syntax, TRACE(name) P(integer) NAMES(string) THIN(integer) BURNin(integer) [NAME(string)]
+	syntax, TRACE(name) P(integer) NAMES(string) THIN(integer) BURNin(integer) [NAME(string) DZONLY]
 	preserve
 	tempname T
 	matrix `T' = `trace'
@@ -208,15 +223,17 @@ program _nwalaam_traceplot
 			quietly replace th`k' = `T'[`i', `k'] in `i'
 			quietly replace dz`k' = `T'[`i', `P' + `k'] in `i'
 		}
-		quietly twoway line th`k' it, title("`nm': coefficient", size(medsmall)) xtitle("iteration") ytitle("") xline(`burnin', lpattern(dash)) name(__nwalaam_g`k'a, replace) nodraw
+		if "`dzonly'" == "" quietly twoway line th`k' it, title("`nm': coefficient", size(medsmall)) xtitle("iteration") ytitle("") xline(`burnin', lpattern(dash)) name(__nwalaam_g`k'a, replace) nodraw
 		quietly twoway line dz`k' it, title("`nm': dzA", size(medsmall)) xtitle("iteration") ytitle("") xline(`burnin', lpattern(dash)) yline(0) name(__nwalaam_g`k'b, replace) nodraw
-		local graphs `graphs' __nwalaam_g`k'a __nwalaam_g`k'b
+		if "`dzonly'" == "" local graphs `graphs' __nwalaam_g`k'a __nwalaam_g`k'b
+		else local graphs `graphs' __nwalaam_g`k'b
 	}
 	local nopt
 	if "`name'" != "" local nopt name(`name', replace)
-	graph combine `graphs', cols(2) title("Equilibrium-expectation trace of the first run") `nopt'
+	graph combine `graphs', cols(`=cond("`dzonly'" == "", 2, min(2, `k'))') title("`=cond("`dzonly'" == "", "Equilibrium-expectation trace of the first run", "Stochastic approximation: statistics of the final phase")'") `nopt'
 	forvalues j = 1/`k' {
-		capture graph drop __nwalaam_g`j'a __nwalaam_g`j'b
+		capture graph drop __nwalaam_g`j'a
+		capture graph drop __nwalaam_g`j'b
 	}
 	restore
 end

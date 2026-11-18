@@ -1,5 +1,5 @@
 {smcl}
-{* *! version 0.1.0  18nov2026 author: Thomas Grund}{...}
+{* *! version 0.2.0  18nov2026 author: Thomas Grund}{...}
 {marker topic}
 {title:Title}
 
@@ -132,4 +132,4 @@ scalars {cmd:e(N)}, {cmd:e(n_ones)}, {cmd:e(nodes)}, {cmd:e(runs)}, {cmd:e(runs_
 {p 4 8 2}Stivala, A. 2023. Overcoming near-degeneracy in the autologistic actor attribute model. arXiv:2309.07338.{p_end}
 
 {hline}
-{pstd}{it:nwalaam version 0.1.0, 18 November 2026}{p_end}{* nwversion}
+{pstd}{it:nwalaam version 0.2.0, 18 November 2026}{p_end}{* nwversion}

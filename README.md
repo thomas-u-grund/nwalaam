@@ -1,6 +1,6 @@
 # nwalaam
 
-<!--version-->**Version 0.1.0** (released 18 November 2026)<!--/version-->
+<!--version-->**Version 0.2.0** (released 18 November 2026)<!--/version-->
 
 Autologistic actor attribute models (ALAAMs) for Stata: a binary outcome on the nodes of a fixed network, explained by the network
 structure around the nodes (contagion, activity, triangles, covariates ...). Part of the nwcommands family; requires the core package
