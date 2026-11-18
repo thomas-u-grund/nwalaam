@@ -1,0 +1,10 @@
+# GOTCHA - known pitfalls of nwalaam
+
+- **ALAAMEE's pooled standard error is not used.** ALAAMEE (R script `computeALAMEEcovariance.R`) combines the runs by inverse-variance weighting, so its pooled standard error is the single-run one divided by sqrt(runs): it shrinks with the number of runs although the information part does not. Against the exact maximum likelihood of a 16-node network (`cscripts/test_nwalaam_exact.do`, all 2^16 outcome vectors) the single-run standard error is right (ratio 1.00) and the pooled one was 0.15 of the truth with 40 runs. nwalaam averages the information part over the runs and divides only the Monte-Carlo part by the number of runs. Its covariance is inv(batch-means covariance of dzA) + Monte-Carlo variance; the literal ALAAMEE formula solve(cov/N) was not used (it gave standard errors 22 times too large with N = 490).
+- **The pseudo-likelihood estimate may not exist** (perfect separation): the karate club with density, activity and contagion is separated. `mple` then stops with r(430); a normal EE fit shows the missing value in `e(b_mple)`.
+- **Tiny networks are badly identified**: with 12 to 16 nodes the exact standard errors are large and collinearity (density, activity, two-star) is strong; use such networks only for the exact test.
+- **Mata `tokens(s, "()")` treats the two characters as a binding pair**, not as two parse characters; `alaam_effects()` pads the parentheses with blanks instead.
+- **Mata one-line `if (...) if (...) {` and `{ a; break }` are syntax errors.** Write the blocks out.
+- **Mata classes cannot be declared from the interactive prompt** (`class AlaamNat scalar N` fails): tests use `AlaamChangeStats()`.
+- **The directed 3-cycle statistics count every cycle once per node**: the definition used in `dev/gen_ref_definitions.py` counts each cycle with its smallest node first; an early version counted three rotations and disagreed by exactly that factor.
+- **ALAAMEE source could not be run here**: the tests compare with the definitions, not with the Python code (the sandbox refused to execute the downloaded repository).

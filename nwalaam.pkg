@@ -1,0 +1,21 @@
+v 3
+d nwalaam. Autologistic actor attribute models (ALAAMs) for a binary node outcome on a fixed network, by equilibrium expectation
+d Thomas U. Grund, RWTH Aachen University, www.grund.co.uk
+d email: thomas.u.grund@gmail.com
+d GPL-3. Requires the core package nwcommands.
+d Requires nwcommands (core), version 3.26.0 or later
+d Version: 0.1.0
+d Distribution-Date: 18nov2026
+f nwalaam.ado
+f _nwalaam_libcheck.ado
+f nwalaam_version.ado
+f nwalaam.sthlp
+f lib/lnwalaam.mlib
+f lib/plugins/macos/alaam_sim_macos.plugin
+f lib/plugins/windows/alaam_sim_windows.plugin
+f lib/plugins/unix/alaam_sim_unix.plugin
+f native/alaam_sim.c
+f native/Makefile
+f native/spi/stplugin.c
+f native/spi/stplugin.h
+f nwalaam_native_readme.txt
