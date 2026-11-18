@@ -3,6 +3,11 @@
 All notable changes to nwalaam are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project uses [Semantic Versioning](https://semver.org/).
 
+## [0.3.1] - 2026-11-18
+
+### Fixed
+- StataNow's console binary on a Mac reports `c(os)` = "Unix"; the plugin was then looked up as the Linux file. The platform is now taken as the core does: Unix with a machine type starting "Mac" is macOS. Test `test_nwalaam_platform.do`.
+
 ## [0.3.0] - 2026-11-18
 
 ### Added

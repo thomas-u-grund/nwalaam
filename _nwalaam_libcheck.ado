@@ -1,4 +1,4 @@
-*! version 0.3.0  18nov2026 nwalaam
+*! version 0.3.1  18nov2026 nwalaam
 * Copyright (C) 2026 Thomas U. Grund. Part of nwalaam; GNU GPL-3 (see LICENSE).
 capture program drop _nwalaam_libcheck
 program _nwalaam_libcheck

@@ -1,10 +1,10 @@
-*! version 0.3.0  18nov2026 nwalaam
+*! version 0.3.1  18nov2026 nwalaam
 * Copyright (C) 2026 Thomas U. Grund. Part of nwalaam; GNU GPL-3 (see LICENSE).
 capture program drop nwalaam_version
 program nwalaam_version, rclass
 	version 14
 	_nwalaam_libcheck
-	local __pkgver "0.3.0"
+	local __pkgver "0.3.1"
 	local __pkgdate "18nov2026"
 	mata: st_local("__p", AlaamPluginPath())
 	mata: st_local("__ok", strofreal(AlaamNativeAvailable()))

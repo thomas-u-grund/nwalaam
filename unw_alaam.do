@@ -14,6 +14,7 @@
 	the EE runs and computes the standard errors from the runs (batch means). There is no Mata fallback: without a plugin
 	the command stops (r(601), r(3495)).
 */
+capture mata: mata drop AlaamPlatform()
 capture mata: mata drop AlaamPluginFilename()
 capture mata: mata drop AlaamPluginSubdir()
 capture mata: mata drop AlaamPluginPath()
@@ -71,24 +72,26 @@ real colvector alaam_pull(real colvector rows, string scalar var)
 	return(out)
 }
 
-string scalar AlaamPluginFilename()
-{
-	string scalar os
-
-	os = st_global("c(os)")
-	if (os == "Windows") return("alaam_sim_windows.plugin")
-	if (os == "Unix") return("alaam_sim_unix.plugin")
-	return("alaam_sim_macos.plugin")
-}
-
-string scalar AlaamPluginSubdir()
+// the platform of the plugin: StataNow's console binary on a Mac reports c(os) = "Unix" (c(machine_type) starts with "Mac")
+string scalar AlaamPlatform()
 {
 	string scalar os
 
 	os = st_global("c(os)")
 	if (os == "Windows") return("windows")
-	if (os == "Unix") return("unix")
-	return("macos")
+	if (os == "MacOSX") return("macos")
+	if (substr(st_global("c(machine_type)"), 1, 3) == "Mac") return("macos")
+	return("unix")
+}
+
+string scalar AlaamPluginFilename()
+{
+	return("alaam_sim_" + AlaamPlatform() + ".plugin")
+}
+
+string scalar AlaamPluginSubdir()
+{
+	return(AlaamPlatform())
 }
 
 // (1) findfile() on the file name alone (after a net install), (2) lib/plugins/<os>/ next to nwalaam.ado (a checkout)
