@@ -81,7 +81,7 @@ matrix OBS = e(obs_stats)
 assert OBS[1, 1] == 18 & OBS[1, 2] == 80 & OBS[1, 3] == 35
 assert "`: colnames e(b)'" == "density activity contagion"
 assert !missing(e(acceptance)) & e(acceptance) > 0 & e(acceptance) < 1
-assert "`e(version)'" == "0.2.0"
+assert "`e(version)'" == "0.3.0"
 matrix B1 = e(b)
 di as text "  PASS: fit and stored results"
 
@@ -265,5 +265,5 @@ di as text "  PASS: new directed effects"
 
 * ---- version
 nwalaam version
-assert "`r(version)'" == "0.2.0"
+assert "`r(version)'" == "0.3.0"
 di "test_nwalaam_ado: ALL OK"

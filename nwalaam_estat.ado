@@ -1,4 +1,4 @@
-*! version 0.2.0  18nov2026 nwalaam_estat
+*! version 0.3.0  18nov2026 nwalaam_estat
 * Copyright (C) 2026 Thomas U. Grund. Part of nwalaam; GNU GPL-3 (see LICENSE).
 
 capture program drop nwalaam_estat
@@ -52,7 +52,8 @@ program _nwalaam_gof, rclass
 	tempname TH
 	matrix `TH' = e(b)
 	local __P = colsof(`TH')
-	_nwalaam_prep `depvar' `netname', effects(`effects') extra(`extra') mode(`=cond("`e(modeopt)'" == "", 1, `e(modeopt)')') zone(`e(zone)') sampler(`e(samplerarg)')
+	local __mo = cond("`e(modeopt)'" == "", "1", "`e(modeopt)'")
+	_nwalaam_prep `depvar' `netname', effects(`effects') extra(`extra') mode(`__mo') zone(`e(zone)') sampler(`e(samplerarg)')
 	local __Pall : word count `__allnames'
 	mata: __nwalaam_n = rows(__nwalaam_adj)
 	if `"`burnin'"' == "" local burnin = max(10000, 100 * `nodes')

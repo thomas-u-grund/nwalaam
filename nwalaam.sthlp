@@ -1,5 +1,5 @@
 {smcl}
-{* *! version 0.2.0  18nov2026 author: Thomas Grund}{...}
+{* *! version 0.3.0  18nov2026 author: Thomas Grund}{...}
 {marker topic}
 {title:Title}
 
@@ -18,7 +18,7 @@
 {cmd:nwalaam}  [{cmd:,} {opt ci} {opt noci} {opt level(#)} {it:display_options}]  (replay after a fit)
 
 {p 8 16 2}
-{cmd:nwalaam simulate} [{it:outcome} [{it:netname}]]{cmd:,} {c -(}{opt gen:erate(stub)} | {opt fr:ame(name)}{c )-} [{opt eff:ects(list)} {opt theta(matname)} {opt nsim(#)} {opt burn:in(#)} {opt inter:val(#)} {opt seed(#)} {opt replace}]
+{cmd:nwalaam simulate} [{it:outcome} [{it:netname}]]{cmd:,} {c -(}{opt gen:erate(stub)} | {opt fr:ame(name)}{c )-} [{opt eff:ects(list)} {opt theta(matname)} {opt nsim(#)} {opt burn:in(#)} {opt inter:val(#)} {opt seed(#)} {opt replace} {opt mode(#)} {opt zone(varname)} {opt sampl:er(zoo)}]
 
 {p 8 16 2}
 {cmd:estat gof} [{cmd:,} {opt nsim(#)} {opt extra(list)} {opt noex:tra} {opt burn:in(#)} {opt inter:val(#)} {opt seed(#)} {opt plot} {opt name(name)}]
@@ -34,7 +34,7 @@
 never changed by the sampler and count as 0 in every statistic), one row per actor. When the dataset carries the node labels
 (variable {cmd:_nwnode}, as after {helpb nwload} with {cmd:xvars}) the rows are matched to the actors by label; otherwise the
 dataset must have one row per actor, in actor order. {it:netname} is the network (default: the current network); it may be
-undirected or directed, one-mode. Valued networks are used as binary (a tie where the value is not 0).
+undirected or directed, one-mode, or a two-mode network (see {help nwalaam##twomode:Two-mode networks}). Valued networks are used as binary (a tie where the value is not 0).
 
 {synoptset 24 tabbed}{...}
 {synopthdr}
@@ -45,6 +45,9 @@ undirected or directed, one-mode. Valued networks are used as binary (a tie wher
 {synopt :{opt sait:er(#)}}length of the stochastic approximation: iterations of each phase; default {cmd:500}{p_end}
 {synopt :{opt prop:osals(#)}}proposals per iteration; default {cmd:1000}{p_end}
 {synopt :{opt start(matname)}}1 x {it:P} starting values (default: Algorithm S, 100 iterations){p_end}
+{synopt :{opt mode(#)}}two-mode networks: the level (1 or 2) on which the outcome is defined; default {cmd:1}{p_end}
+{synopt :{opt zone(varname)}}snowball sample: the zone (0, 1, ..., outermost) of every actor; the conditional sampler holds the outermost zone fixed{p_end}
+{synopt :{opt sampl:er(zoo)}}zero-or-one sampler for rare (or very common) outcomes; default: the toggle sampler{p_end}
 {synopt :{opt runs(#)}}{cmd:method(ee)}: independent runs; default {cmd:30}{p_end}
 {synopt :{opt iter:ations(#)}}{cmd:method(ee)}: iterations of every run; default {cmd:50000}{p_end}
 {synopt :{opt thin(#)}}{cmd:method(ee)}: every {it:#}th iteration is stored; default {cmd:100}{p_end}
@@ -72,8 +75,8 @@ ones, which is the maximum likelihood condition, using the covariance of the sim
 averaging the coefficients over the last subphase. The procedure is repeated from its result, up to 20 times, until the
 convergence t-ratios (mean over standard deviation of the difference between simulated and observed statistics in a final
 phase at the estimate) are all below 0.1 in absolute value. The covariance matrix of the estimate is the inverse of the
-batch-means covariance of the simulated statistics at the estimate (the information); {cmd:saiter()} lengthens the phases and
-steadies the standard errors.
+covariance of the simulated statistics at the estimate (the information); on small networks, where the exact maximum likelihood estimate
+can be computed, the standard errors agree with the exact ones within a few percent. {cmd:saiter()} lengthens the phases.
 
 {pstd}
 {cmd:method(ee)} is the equilibrium-expectation (EE) algorithm of Borisenko, Byshkin and Lomi in the form used by ALAAMEE: every
@@ -96,7 +99,8 @@ for starting values and for a quick look.
 
 {pstd}
 All computing is done in a compiled plugin; there is no slower fallback (error 601: plugin missing; 3495: plugin too old).
-The change statistics of the plugin were compared with the definitions of the statistics.
+The change statistics of the plugin were compared with ALAAMEE's own for random undirected, directed and two-mode networks with missing
+values (differences below 1e-15).
 
 
 {pstd}
@@ -134,6 +138,9 @@ setting (confounding). The network is taken as given; use a longitudinal model s
 {p2col :{cmd:sameindirect(}{it:var}{cmd:)}, {cmd:diffindirect(}{it:var}{cmd:)}}two-paths between two nodes with the outcome of the same / different categories{p_end}
 {p2col :{cmd:alterbinarytwostar1(}{it:var}{cmd:)}}sum over the nodes with the outcome of (degree - 1) of the neighbours with the binary attribute 1{p_end}
 {p2col :{cmd:alterbinarytwostar2(}{it:var}{cmd:)}}two-paths between two nodes with the outcome whose middle node has the binary attribute 1{p_end}
+{p2col :{cmd:settinghomophily(}{it:netname}{cmd:)}}ties in a second (setting) network between two nodes with the outcome; the main network is not required to have the tie{p_end}
+{p2col :{cmd:geographichomophily(}{it:matname}{cmd:)}}sum over all other nodes with the outcome of their distance to the node (a distance matrix, see below){p_end}
+{p2col :{cmd:contagiondist(}{it:matname}{cmd:)}}sum over the neighbours with the outcome of their distance to the node{p_end}
 {p2colreset}{...}
 
 {pstd}{bf:Directed networks}{p_end}
@@ -156,10 +163,31 @@ setting (confounding). The network is taken as given; use a longitudinal model s
 {p2col :{cmd:sendermatch(}{it:var}{cmd:)}, {cmd:sendermismatch(}{it:var}{cmd:)}}out-ties to nodes of the same / a different category{p_end}
 {p2col :{cmd:receivermatch(}{it:var}{cmd:)}, {cmd:receivermismatch(}{it:var}{cmd:)}}in-ties from nodes of the same / a different category{p_end}
 {p2col :{cmd:reciprocitymatch(}{it:var}{cmd:)}, {cmd:reciprocitymismatch(}{it:var}{cmd:)}}mutual ties with nodes of the same / a different category{p_end}
+{p2col :{cmd:settinghomophily(}{it:netname}{cmd:)}, {cmd:geographichomophily(}{it:matname}{cmd:)}}as in undirected networks{p_end}
 {p2colreset}{...}
-The definitions are those of ALAAMEE (Stivala, Wang and Lomi). Continuous covariates are used as they are: centre them.
+The definitions are those of ALAAMEE (Stivala, Wang and Lomi), including its change statistics of the directed gw, log and power contagion, which sum over the
+out-neighbours with the outcome (counting their in-neighbours with the outcome) and the in-neighbours with the outcome (counting their out-neighbours with the
+outcome). Continuous covariates are used as they are: centre them.
 
-{pstd}Not available yet: two-mode networks, setting and geographic homophily and distance effects.
+{pstd}{bf:Setting network and distance matrix.} {it:netname} of {cmd:settinghomophily()} is another network of the same actors (one-mode; direction is ignored). {it:matname}
+is a Stata matrix (or, for large networks, a Mata matrix) with one row and one column for each actor of the network, in the order of the network; a
+distance matrix is not changed or centred. {cmd:geographichomophily} visits every actor for every proposal and is slow on large networks.
+
+{marker twomode}{...}
+{pstd}{bf:Two-mode networks.} The outcome is defined on the actors of one level, chosen with {opt mode(#)}; the other level is the network of
+events, groups or affiliations the actors are tied to. The outcome and the covariates are variables of the current dataset: either one row for each actor of
+the outcome level (in the order of the network), or, with node labels in the dataset, matched by label, or one row for every node of both levels. Covariates of
+the other level (for {cmd:alter()} and the binary two-stars) need rows for all nodes. The effects are {cmd:density}, {cmd:activity}, {cmd:twostar}, {cmd:threestar},
+{cmd:gwactivity}, {cmd:alter2star1}, {cmd:alter2star2}, {cmd:fourcycle1} (four-cycles through the actor and another actor of the same level, whatever its outcome),
+{cmd:fourcycle2} (the other actor also has the outcome), {cmd:ego()}, {cmd:alter()}, {cmd:samepartneractivity()}, {cmd:diffpartneractivity()}, {cmd:sameindirect()},
+{cmd:diffindirect()}, {cmd:alterbinarytwostar1()} and {cmd:alterbinarytwostar2()}, {cmd:settinghomophily()} and {cmd:geographichomophily()}; contagion effects do
+not exist because there are no ties within a level.
+
+{pstd}{bf:Samplers.} The default toggle sampler proposes to change the outcome of a random actor. With rare (or very common) outcomes most proposals are wasted;
+{cmd:sampler(zoo)} proposes a move to 1 or a move to 0 with equal probability and then a random actor with the other value, correcting the acceptance probability
+for the numbers of actors with each value. (The correction is derived exactly, including the cases with all or no actor having the outcome, and checked against the exact
+maximum likelihood on a small network.) {cmd:zone(varname)} declares snowball-sampled data: the zones 0 (seeds), 1, ..., and the actors of the outermost zone keep their observed outcome while
+the others change (the conditional sampler of Stivala et al. 2020); not with a two-mode network or {cmd:sampler(zoo)}.
 Geometrically weighted statistics are the remedy for near-degeneracy of the activity and star statistics on larger networks
 (Stivala 2023); read their sign with care.
 
@@ -218,7 +246,7 @@ stochastic approximation. Not after {cmd:mple} (r(498)).
 estimate; missing when it does not exist, for example under perfect separation), {cmd:e(b_start)}, {cmd:e(tratio)}, {cmd:e(diag)};
 scalars {cmd:e(N)}, {cmd:e(n_ones)}, {cmd:e(nodes)}, {cmd:e(runs)}, {cmd:e(runs_used)}, {cmd:e(iterations)}, {cmd:e(thin)}, {cmd:e(burnin)},
 {cmd:e(proposals)}, {cmd:e(acceptance)}, {cmd:e(seed)} (EE), {cmd:e(repetitions)}, {cmd:e(sa_converged)}, {cmd:e(saiter)} (SA); matrices {cmd:e(run_diag)}, {cmd:e(trace1)}; macros {cmd:e(cmd)}, {cmd:e(version)}, {cmd:e(depvar)}, {cmd:e(network)}, {cmd:e(effects)},
-{cmd:e(directed)}, {cmd:e(method)} ({cmd:sa}, {cmd:ee} or {cmd:mple}), {cmd:e(effects_spec)}, {cmd:e(title)}.
+{cmd:e(directed)}, {cmd:e(twomode)}, {cmd:e(modeopt)}, {cmd:e(zone)}, {cmd:e(sampler)}, {cmd:e(method)} ({cmd:sa}, {cmd:ee} or {cmd:mple}), {cmd:e(effects_spec)}, {cmd:e(title)}.
 
 
 {marker ref}{...}
@@ -228,7 +256,8 @@ scalars {cmd:e(N)}, {cmd:e(n_ones)}, {cmd:e(nodes)}, {cmd:e(runs)}, {cmd:e(runs_
 {p 4 8 2}Daraganova, G., Robins, G. 2013. Autologistic actor attribute models. In Lusher, Koskinen, Robins (eds.), Exponential Random Graph Models for Social Networks, ch. 9. Cambridge University Press.{p_end}
 {p 4 8 2}Snijders, T. A. B. 2002. Markov chain Monte Carlo estimation of exponential random graph models. Journal of Social Structure 3(2).{p_end}
 {p 4 8 2}Stivala, A., Wang, P., Lomi, A. 2024. ALAAMEE: Open-source software for fitting autologistic actor attribute models. PLOS Complex Systems 1(4): e0000021.{p_end}
+{p 4 8 2}Stivala, A., Gallagher, H. C., Rolls, D. A., Wang, P., Robins, G. L. 2020. Using sampled network data with the autologistic actor attribute model. arXiv:2002.00849.{p_end}
 {p 4 8 2}Stivala, A. 2023. Overcoming near-degeneracy in the autologistic actor attribute model. arXiv:2309.07338.{p_end}
 
 {hline}
-{pstd}{it:nwalaam version 0.2.0, 18 November 2026}{p_end}{* nwversion}
+{pstd}{it:nwalaam version 0.3.0, 18 November 2026}{p_end}{* nwversion}

@@ -3,6 +3,19 @@
 All notable changes to nwalaam are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project uses [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] - 2026-11-18
+
+### Added
+- Two-mode (bipartite) networks: `mode(1|2)` names the level on which the outcome is defined; the effects of ALAAMEE for two-mode networks, including the new `fourcycle1` and `fourcycle2`.
+- `settinghomophily(netname)`, `geographichomophily(matname)` and `contagiondist(matname)` (a second network, a distance matrix).
+- The zero-or-one sampler (`sampler(zoo)`) and the snowball-conditional sampler (`zone(varname)`: the outermost zone keeps its observed outcome), in estimation, `simulate` and `estat gof`.
+- Tests: change statistics against ALAAMEE's for six random networks (undirected, directed, two-mode; missing values in outcome and covariates), `test_nwalaam_alaamee.do`; the exact maximum likelihood (by enumeration) for the zero-or-one sampler with setting and distance effects, a two-mode network and the snowball sampler, `test_nwalaam_exact2.do`.
+
+### Changed
+- The directed `gwcontagion`, `logcontagion` and `powercontagion` use ALAAMEE's change statistic (the in-neighbours of an out-neighbour, the out-neighbours of an in-neighbour).
+- The covariance matrix of the stochastic-approximation estimate is the inverse of the sample covariance of the simulated statistics (before: of their batch-means covariance); on the 16-actor test network the standard errors are within 2 percent of the exact ones (before: 15 to 20 percent Monte-Carlo error).
+- Plugin protocol 5.
+
 ## [0.2.0] - 2026-11-18
 
 ### Changed

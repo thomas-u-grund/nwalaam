@@ -667,7 +667,9 @@ void AlaamSA(class AlaamNat scalar N, real scalar P, real rowvector zobs, real r
 		errprintf("{p 0 0 2}nwalaam: the stochastic approximation diverged (the model may be degenerate for this network; try fewer effects, or a smaller lrate()).{p_end}\n")
 		exit(430)
 	}
-	C = alaam_bmcov(DZ)
+	// information matrix = covariance of the statistics at the estimate (sample covariance of the stationary draws; the batch-means
+	// long-run covariance would add the autocorrelation of the chain)
+	C = variance(DZ)
 	if (hasmissing(C) | rank(C) < P) {
 		N.close()
 		errprintf("{p 0 0 2}nwalaam: the simulated statistics are collinear at the estimate; the covariance matrix of the estimate cannot be computed.{p_end}\n")

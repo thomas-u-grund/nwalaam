@@ -18,7 +18,7 @@ program _nwalaam_simulate, rclass
 		local depvar `"`e(depvar)'"'
 		local netname `"`e(network)'"'
 		local effects `"`e(effects_spec)'"'
-		local mode = cond("`e(modeopt)'" == "", 1, `e(modeopt)')
+		local mode = cond("`e(modeopt)'" == "", "1", "`e(modeopt)'")
 		local zone `"`e(zone)'"'
 		local sampler `"`e(samplerarg)'"'
 	}

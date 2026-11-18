@@ -1,6 +1,6 @@
 # nwalaam
 
-<!--version-->**Version 0.2.0** (released 18 November 2026)<!--/version-->
+<!--version-->**Version 0.3.0** (released 18 November 2026)<!--/version-->
 
 Autologistic actor attribute models (ALAAMs) for Stata: a binary outcome on the nodes of a fixed network, explained by the network
 structure around the nodes (contagion, activity, triangles, covariates ...). Part of the nwcommands family; requires the core package
@@ -12,12 +12,19 @@ structure around the nodes (contagion, activity, triangles, covariates ...). Par
 . estat mcmcdiag
 . estat gof
 . nwalaam simulate, nsim(100) generate(sim) seed(2)
+. nwalaam y affiliations, effects(density activity fourcycle1 fourcycle2) mode(1)       // two-mode network
+. nwalaam y g, effects(density contagion settinghomophily(school)) sampler(zoo)        // setting network, zero-or-one sampler
+. nwalaam y g, effects(density contagion) zone(zone)                                   // snowball sample (conditional sampler)
 ```
+
+The effects, the three samplers (toggle, zero-or-one, snowball-conditional), undirected, directed and two-mode networks and the setting-network and
+distance effects of ALAAMEE are available; the change statistics agree with ALAAMEE's to rounding error on random networks of each kind
+(`cscripts/test_nwalaam_alaamee.do`).
 
 The default estimator is stochastic approximation: it reproduces the exact maximum likelihood estimate where that can be computed
 by enumeration (the karate club), while the equilibrium-expectation update of ALAAMEE stops at slightly different estimates; see
 `help nwalaam` and `CHANGELOG.md`. Examples on the Glasgow and Lazega data are in `examples/`.
 
-Status: version 0.2.0, not released; a local repository without a remote. Tested on macOS with Stata 17. Linux and Windows plugins are
+Status: version 0.3.0, not released; a local repository without a remote. Tested on macOS with Stata 17. Linux and Windows plugins are
 built by `.github/workflows/build-plugins.yml` when the repository is published; until then they are not tested. See `help nwalaam`,
 `CHANGELOG.md`, `NOTICE.md` and `RELEASING.md`.

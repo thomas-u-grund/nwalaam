@@ -141,7 +141,7 @@ forvalues j = 1/3 {
 }
 di as text "  PASS 4: the sampler is stationary at the exact MLE (t-ratios " %7.4f T[1,1] " " %7.4f T[1,2] " " %7.4f T[1,3] ")"
 // 5. the default method (stochastic approximation) against the exact MLE: estimates within 0.25 exact standard errors, standard
-// errors within 20 percent of the exact ones. Several seeds: the mean over the fits is closer still
+// errors within 10 percent of the exact ones. Several seeds: the mean over the fits is closer still
 matrix ACC = J(1, 3, 0)
 forvalues r = 1/5 {
 	nwalaam y g12, effects(density contagion ego(x)) saiter(1000) seed(`r'7)
@@ -154,7 +154,7 @@ forvalues r = 1/5 {
 		local ml = mle[1, `j']
 		local mlse = mlese[1, `j']
 		di "seed `r'7, effect `j': SA " %8.4f `sa' " (se " %6.4f `se' ")   exact " %8.4f `ml' " (se " %6.4f `mlse' ")   diff in exact se " %6.3f (`sa' - `ml') / `mlse' "   se ratio " %5.2f `se' / `mlse'
-		assert inrange(`se' / `mlse', 0.6, 1.4)
+		assert inrange(`se' / `mlse', 0.9, 1.1)
 		assert abs(`sa' - `ml') < 0.25 * `mlse'
 		matrix ACC[1, `j'] = ACC[1, `j'] + (`sa' - `ml') / `mlse' / 5
 	}
