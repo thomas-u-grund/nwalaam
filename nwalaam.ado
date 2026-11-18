@@ -1,4 +1,4 @@
-*! version 0.1.0  18nov2026 nwalaam
+*! version 0.2.0  18nov2026 nwalaam
 * Copyright (C) 2026 Thomas U. Grund
 * This file is part of nwalaam, a Stata package for autologistic actor attribute models (ALAAMs). It follows the
 * method of the ALAAMEE software (Stivala, Wang and Lomi; MIT licence) and is written independently.
@@ -10,8 +10,13 @@
 capture program drop nwalaam
 program nwalaam, eclass
 	version 14
-	if word(`"`0'"', 1) == "version" {
+	gettoken __w1 __rest : 0, parse(" ,")
+	if `"`__w1'"' == "version" {
 		nwalaam_version
+		exit
+	}
+	if `"`__w1'"' == "simulate" {
+		_nwalaam_simulate `__rest'
 		exit
 	}
 	if replay() {
@@ -22,9 +27,24 @@ program nwalaam, eclass
 			exit
 		}
 	}
-	syntax [anything(name=args)] [, EFFects(string) MPLE RUNs(integer 30) ITERations(integer 50000) THIN(integer 100) ///
+	syntax [anything(name=args)] [, EFFects(string) MPLE METHod(string) SAITer(integer 500) RUNs(integer 30) ITERations(integer 50000) THIN(integer 100) ///
 		BURNin(integer 1000) PROPosals(integer 1000) LRate(real 0.01) SEED(string) START(name) *]
 	local __tabopts `"`options'"'
+	local method = lower(trim(`"`method'"'))
+	if "`mple'" != "" & "`method'" != "" & "`method'" != "mple" {
+		di as error "mple and method(`method') cannot be combined"
+		error 198
+	}
+	if "`method'" == "" local method "sa"
+	if "`mple'" != "" local method "mple"
+	if !inlist("`method'", "ee", "sa", "mple") {
+		di as error "method() must be sa (stochastic approximation, the default) or ee (equilibrium expectation)"
+		error 198
+	}
+	if `saiter' < 20 {
+		di as error "saiter() must be at least 20"
+		error 198
+	}
 	_nwalaam_tabopts __chk check, `__tabopts'
 	if `"`seed'"' != "" {
 		capture confirm integer number `seed'
@@ -49,73 +69,9 @@ program nwalaam, eclass
 	_nwalaam_libcheck
 	gettoken depvar netname : args
 	local netname = trim("`netname'")
-	capture confirm numeric variable `depvar'
-	if _rc {
-		di as error "{p 0 0 2}the first argument must be the outcome variable (numeric, 0/1) in the current dataset, then the network: {bf:nwalaam outcome netname, effects(...)}.{p_end}"
-		error 198
-	}
-	_nwsyntax `netname', max(1)
-	if "`is2mode'" == "true" {
-		di as error "nwalaam does not support two-mode (bipartite) networks yet; {bf:`netname'} is two-mode."
-		error 198
-	}
-	local __dir = ("`directed'" == "true")
-	if `"`effects'"' == "" {
-		di as error "{p 0 0 2}effects() must name at least one effect, e.g. {bf:effects(density contagion activity)}.{p_end}"
-		error 198
-	}
-	mata: __nwalaam_et = J(1, 0, .); __nwalaam_ep = __nwalaam_et; __nwalaam_ec = __nwalaam_et; __nwalaam_nm = J(1, 0, ""); __nwalaam_cn = J(1, 0, "")
-	mata: alaam_effects(`"`effects'"', `__dir', __nwalaam_et, __nwalaam_ep, __nwalaam_ec, __nwalaam_nm, __nwalaam_cn)
-	mata: st_local("__names", invtokens(__nwalaam_nm))
-	mata: st_local("__covs", invtokens(__nwalaam_cn))
+	_nwalaam_prep `depvar' `netname', effects(`effects')
 	local __P : word count `__names'
-	// per-actor variables: matched to the actors by label when the dataset carries them, else one row per actor in order
-	unw_defs
-	tempname __rows
-	capture confirm string variable `nw_nodename'
-	if !_rc {
-		mata: __nwalaam_rows = alaam_node_rows(`netobj'->get_nodenames(), st_sdata(., "`nw_nodename'"))
-		mata: st_local("__nf", strofreal(sum(__nwalaam_rows :== 0)))
-		mata: st_local("__nd", strofreal(sum(__nwalaam_rows :< 0)))
-		if `__nf' > 0 | `__nd' > 0 {
-			capture mata: mata drop __nwalaam_rows
-			di as error "{p 0 0 2}the actors of `netname' do not each have exactly one row in the current dataset (variable `nw_nodename'); the outcome and the covariates need one row per actor (see {help nwload}'s {bf:xvars} option).{p_end}"
-			error 198
-		}
-	}
-	else {
-		if _N != `nodes' {
-			di as error "{p 0 0 2}the current dataset has `=_N' observations but `netname' has `nodes' actors and no node labels (variable `nw_nodename'); the outcome and the covariates need one row per actor, in actor order.{p_end}"
-			error 198
-		}
-		mata: __nwalaam_rows = (1::`nodes')
-	}
-	mata: __nwalaam_y = st_data(__nwalaam_rows, "`depvar'")
-	mata: st_local("__bad", strofreal(sum((__nwalaam_y :< .) :& (__nwalaam_y :!= 0) :& (__nwalaam_y :!= 1))))
-	mata: st_local("__ny1", strofreal(sum(__nwalaam_y :== 1)))
-	mata: st_local("__ny", strofreal(sum(__nwalaam_y :< .)))
-	if `__bad' > 0 {
-		capture mata: mata drop __nwalaam_*
-		di as error "{p 0 0 2}the outcome `depvar' must be 0 or 1 (or missing).{p_end}"
-		error 450
-	}
-	if `__ny1' == 0 | `__ny1' == `__ny' {
-		capture mata: mata drop __nwalaam_*
-		di as error "{p 0 0 2}the outcome `depvar' has no variation among the actors with a non-missing value.{p_end}"
-		error 2000
-	}
-	mata: __nwalaam_cov = J(0, `nodes', .)
-	foreach __v of local __covs {
-		capture confirm numeric variable `__v'
-		if _rc {
-			capture mata: mata drop __nwalaam_*
-			di as error "{p 0 0 2}covariate {bf:`__v'} is not a numeric variable in the current dataset.{p_end}"
-			error 198
-		}
-		mata: __nwalaam_cov = (__nwalaam_cov \ st_data(__nwalaam_rows, "`__v'")')
-	}
 	// start values: given as a 1 x P matrix, or (default) from Algorithm S
-	local __haveStart = 0
 	if "`start'" != "" {
 		capture confirm matrix `start'
 		if _rc {
@@ -126,7 +82,6 @@ program nwalaam, eclass
 			di as error "start() must be a 1 x `__P' matrix, one value per effect"
 			error 503
 		}
-		local __haveStart = 1
 		tempname __S0
 		matrix `__S0' = `start'
 	}
@@ -137,9 +92,9 @@ program nwalaam, eclass
 	// seed: given, or drawn from Stata's own generator (so that set seed makes the fit reproducible)
 	if `"`seed'"' == "" local __seed = floor(runiform() * 2147483646) + 1
 	else local __seed = `seed'
-	tempname B V DG
+	tempname B V DG RUNS TRC
 	capture noisily mata: AlaamFit(*(`netobj'->get_matrix()), `__dir', __nwalaam_y, __nwalaam_et, __nwalaam_ep, __nwalaam_ec, __nwalaam_cov, ///
-		`=("`mple'" != "")', `runs', `iterations', `thin', `burnin', `proposals', `lrate', `__seed', `__seed' + 17, "`__S0'", "`B'", "`V'", "`DG'")
+		`=("`mple'" != "")', `runs', `iterations', `thin', `burnin', `proposals', `lrate', `__seed', `__seed' + 17, "`__S0'", "`B'", "`V'", "`DG'", "`RUNS'", "`TRC'", `=("`method'" == "sa")', `saiter')
 	local __rc = _rc
 	capture mata: mata drop __nwalaam_*
 	if `__rc' exit `__rc'
@@ -166,22 +121,40 @@ program nwalaam, eclass
 	}
 	ereturn post `B' `V', obs(`__ny')
 	ereturn local cmd "nwalaam"
-	ereturn local version "0.1.0"
+	ereturn local estat_cmd "nwalaam_estat"
+	ereturn local version "0.2.0"
 	ereturn local depvar "`depvar'"
 	ereturn local network "`netname'"
 	ereturn local effects "`__names'"
+	ereturn local effects_spec `"`effects'"'
 	ereturn local directed = cond(`__dir', "directed", "undirected")
-	ereturn local method = cond("`mple'" != "", "mple", "ee")
-	ereturn local title = cond("`mple'" != "", "Autologistic actor attribute model (maximum pseudo-likelihood)", "Autologistic actor attribute model (equilibrium expectation)")
+	ereturn local method = cond("`mple'" != "", "mple", "`method'")
+	ereturn local title = cond("`mple'" != "", "Autologistic actor attribute model (maximum pseudo-likelihood)", cond("`method'" == "sa", "Autologistic actor attribute model (stochastic approximation)", "Autologistic actor attribute model (equilibrium expectation)"))
 	ereturn scalar N = `__ny'
 	ereturn scalar n_ones = `__ny1'
 	ereturn scalar nodes = `nodes'
 	ereturn matrix diag = `DG'
 	ereturn matrix obs_stats = `OBS'
 	ereturn matrix b_mple = `MP'
-	if "`mple'" == "" {
+	if "`mple'" == "" & "`method'" == "sa" {
 		ereturn matrix b_start = `ST'
 		ereturn matrix tratio = `TR'
+		matrix colnames `RUNS' = `__names' `__names' `__names' `__names'
+		ereturn matrix run_diag = `RUNS'
+		ereturn matrix trace1 = `TRC'
+		ereturn scalar runs = 1
+		ereturn scalar repetitions = `runs_used'
+		ereturn scalar sa_converged = `sa_converged'
+		ereturn scalar proposals = `proposals'
+		ereturn scalar saiter = `saiter'
+		ereturn scalar seed = `__seed'
+	}
+	else if "`mple'" == "" {
+		ereturn matrix b_start = `ST'
+		ereturn matrix tratio = `TR'
+		matrix colnames `RUNS' = `__names' `__names' `__names' `__names'
+		ereturn matrix run_diag = `RUNS'
+		ereturn matrix trace1 = `TRC'
 		ereturn scalar runs = `runs'
 		ereturn scalar runs_used = `runs_used'
 		ereturn scalar iterations = `iterations'
@@ -200,23 +173,25 @@ program _nwalaam_display
 	di as text "{hline 70}"
 	di as text "`e(title)'"
 	di as text "Outcome: " as result "`e(depvar)'" as text " (" as result e(n_ones) as text " of " as result e(N) as text ")" _col(48) as text "Network: " as result "`e(network)'"
+	if "`e(method)'" == "sa" di as text "SA repetitions: " as result e(repetitions) as text " (converged: " as result cond(e(sa_converged), "yes", "no") as text ")" _col(48) as text "Proposals per iteration: " as result e(proposals)
 	if "`e(method)'" == "ee" di as text "EE runs used: " as result e(runs_used) as text " of " as result e(runs) _col(48) as text "Acceptance rate: " as result %5.3f e(acceptance)
 	di as text "{hline 70}"
 	_nwalaam_tabopts __t, `options'
 	ereturn display, `__t'
-	if "`e(method)'" == "ee" {
+	if inlist("`e(method)'", "ee", "sa") {
+		local __thr = cond("`e(method)'" == "sa", 0.1, 0.3)
 		tempname tr
 		matrix `tr' = e(tratio)
 		local __k = colsof(`tr')
 		local __bad
 		local __names : colnames `tr'
 		forvalues j = 1/`__k' {
-			if abs(`tr'[1, `j']) > 0.3 | missing(`tr'[1, `j']) local __bad `__bad' `: word `j' of `__names''
+			if abs(`tr'[1, `j']) > `__thr' | missing(`tr'[1, `j']) local __bad `__bad' `: word `j' of `__names''
 		}
 		if "`__bad'" != "" {
-			di as text "{p 0 6 2}Note: the convergence t-ratio exceeds 0.3 in absolute value for " as result "`__bad'" as text ". The estimation may not have converged, or the model may be degenerate; see {bf:matrix list e(tratio)}.{p_end}"
+			di as text "{p 0 6 2}Note: the convergence t-ratio exceeds `__thr' in absolute value for " as result "`__bad'" as text ". The estimation may not have converged, or the model may be degenerate; see {bf:matrix list e(tratio)}.{p_end}"
 		}
-		else di as text "All convergence t-ratios are within 0.3 in absolute value."
+		else di as text "All convergence t-ratios are within `__thr' in absolute value."
 	}
 end
 

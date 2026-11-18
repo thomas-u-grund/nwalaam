@@ -4,7 +4,8 @@ cscript
 *      contagion, two-star, triangle1-3: counted directly from the adjacency matrix);
 *   2. the exact maximum likelihood estimate and its exact standard errors (inverse Fisher information) are computed;
 *   3. the maximum pseudo-likelihood estimate of nwalaam equals Stata's logit without constant on the change statistics;
-*   4. the EE estimate (40 runs) agrees with the exact MLE within Monte-Carlo error, and its standard errors with the exact ones.
+*   4. the sampler is stationary at the exact MLE;
+*   5. the default method (stochastic approximation) agrees with the exact MLE and its standard errors; 6. so does method(ee) within wider tolerances.
 set seed 20261118
 local nn = 16
 mata:
@@ -133,15 +134,36 @@ assert mreldif(BM, BL) < 1e-6
 di "PASS 3: the pseudo-likelihood estimate equals logit (max rel. diff " mreldif(BM, BL) ")"
 // 4. the sampler is stationary at the exact MLE: with the learning rate essentially zero and theta fixed at the exact MLE, the
 // accumulated differences between simulated and observed statistics have mean zero (t-ratio |t| < 0.05)
-nwalaam y g12, effects(density contagion ego(x)) runs(4) iterations(100000) thin(100) burnin(1000) lrate(1e-12) start(mle) seed(99)
+nwalaam y g12, effects(density contagion ego(x)) method(ee) runs(4) iterations(100000) thin(100) burnin(1000) lrate(1e-12) start(mle) seed(99)
 matrix T = e(tratio)
 forvalues j = 1/3 {
 	assert abs(T[1, `j']) < 0.05
 }
 di as text "  PASS 4: the sampler is stationary at the exact MLE (t-ratios " %7.4f T[1,1] " " %7.4f T[1,2] " " %7.4f T[1,3] ")"
-// 5. EE against the exact MLE: standard errors (information part) within 15 percent of the exact ones; estimates within 0.35 exact
-// standard errors (the EE trajectory mean differs from the maximum likelihood estimate by about 0.2 standard errors on this network)
-nwalaam y g12, effects(density contagion ego(x)) runs(40) iterations(50000) seed(777)
+// 5. the default method (stochastic approximation) against the exact MLE: estimates within 0.25 exact standard errors, standard
+// errors within 20 percent of the exact ones. Several seeds: the mean over the fits is closer still
+matrix ACC = J(1, 3, 0)
+forvalues r = 1/5 {
+	nwalaam y g12, effects(density contagion ego(x)) saiter(1000) seed(`r'7)
+	assert "`e(method)'" == "sa"
+	matrix B = e(b)
+	matrix SE = vecdiag(e(V))
+	forvalues j = 1/3 {
+		local sa = B[1, `j']
+		local se = sqrt(SE[1, `j'])
+		local ml = mle[1, `j']
+		local mlse = mlese[1, `j']
+		di "seed `r'7, effect `j': SA " %8.4f `sa' " (se " %6.4f `se' ")   exact " %8.4f `ml' " (se " %6.4f `mlse' ")   diff in exact se " %6.3f (`sa' - `ml') / `mlse' "   se ratio " %5.2f `se' / `mlse'
+		assert inrange(`se' / `mlse', 0.6, 1.4)
+		assert abs(`sa' - `ml') < 0.25 * `mlse'
+		matrix ACC[1, `j'] = ACC[1, `j'] + (`sa' - `ml') / `mlse' / 5
+	}
+}
+matrix list ACC
+di as text "  PASS 5: stochastic approximation (default) agrees with the exact maximum likelihood (mean difference in exact se: " %6.3f ACC[1,1] " " %6.3f ACC[1,2] " " %6.3f ACC[1,3] ")"
+// 6. method(ee), the ALAAMEE update: standard errors (information part) within 15 percent of the exact ones; estimates within 0.35
+// exact standard errors (on this network the EE trajectory mean differs from the maximum likelihood estimate by about 0.2)
+nwalaam y g12, effects(density contagion ego(x)) method(ee) runs(40) iterations(50000) seed(777)
 matrix B = e(b)
 matrix SE = vecdiag(e(V))
 forvalues j = 1/3 {
@@ -153,5 +175,5 @@ forvalues j = 1/3 {
 	assert inrange(`se' / `mlse', 0.85, 1.15)
 	assert abs(`ee' - `ml') < 0.35 * `mlse'
 }
-di as text "  PASS 5: EE estimates and standard errors agree with the exact maximum likelihood"
+di as text "  PASS 6: method(ee) estimates and standard errors agree with the exact maximum likelihood within the stated tolerances"
 di "test_nwalaam_exact: ALL OK"

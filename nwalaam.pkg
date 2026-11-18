@@ -7,6 +7,9 @@ d Requires nwcommands (core), version 3.26.0 or later
 d Version: 0.1.0
 d Distribution-Date: 18nov2026
 f nwalaam.ado
+f nwalaam_estat.ado
+f _nwalaam_prep.ado
+f _nwalaam_simulate.ado
 f _nwalaam_libcheck.ado
 f nwalaam_version.ado
 f nwalaam.sthlp

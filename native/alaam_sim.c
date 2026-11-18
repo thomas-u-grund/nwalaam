@@ -24,6 +24,15 @@
 	  code 11  observed statistics: P rows (built by adding the outcome nodes one at a time, as the sum of the change
 	           statistics)
 	  code 12  Algorithm S (starting values): "12 L seed M1 mprop" -> P rows with theta
+	  code 31  simulation: "31 L seed nsim burn interval theta_1 ... theta_P" -> nsim rows of P statistics (the statistics of the
+	           simulated outcome vectors, updated incrementally from the observed ones; burn = proposals before the first
+	           draw, interval = proposals between draws); the draw starts at the observed outcomes
+	  code 32  like 31, but returns the nsim simulated outcome vectors (n values each, missing outcomes stay missing)
+	  code 21  stochastic approximation: "21 L seed mprop n1 n2 nsub n3 gain theta_1 ... theta_P". Phase 1: n1 iterations at theta give
+	           the derivative matrix (covariance of the statistics); phase 2: nsub subphases of n2*2^(k-1) iterations with the
+	           Robbins-Monro step theta -= gain/2^(k-1) * D^-1 * dz (dz = statistics of the current outcome minus the observed ones);
+	           the estimate is the mean of theta over the last subphase; phase 3: n3 iterations at the estimate. Result: P values of the
+	           estimate, P values of the mean of dz in phase 3 (not used), then n3 rows of P values of dz in phase 3
 	  code 20  EE run: "20 L seed M mprop thin lr theta_1 ... theta_P" -> for every saved iteration (t = 0, thin, 2 thin, ...):
 	           theta (P values), dzA (P values), acceptance rate (1 value), written one iteration after the other
 	Blob (doubles): [0] protocol [1] n [2] directed [3] P [4] number of ties listed [5] number of covariates (HDR = 16),
@@ -36,8 +45,9 @@
 #include <string.h>
 #include <math.h>
 #include <stdint.h>
+#include <stdio.h>
 
-#define ALAAM_PROTOCOL 1
+#define ALAAM_PROTOCOL 3
 #define HDR 16
 
 typedef struct {
@@ -276,6 +286,30 @@ static double sampler(const Model *g, signed char *A, const int *elig, int ne, c
 	}
 	return (double)acc / mprop;
 }
+
+/* inverse of the P x P matrix a (row-major) by Gauss-Jordan with partial pivoting; returns 0 when singular */
+static int invert(const double *a, double *inv, int P) {
+	int i, j, k, piv;
+	double *m = malloc((size_t)P * 2 * P * sizeof(double));
+	int W = 2 * P, ok = 1;
+	for (i = 0; i < P; i++) for (j = 0; j < P; j++) { m[i * W + j] = a[i * P + j]; m[i * W + P + j] = (i == j) ? 1.0 : 0.0; }
+	for (k = 0; k < P && ok; k++) {
+		double best = fabs(m[k * W + k]), d;
+		piv = k;
+		for (i = k + 1; i < P; i++) if (fabs(m[i * W + k]) > best) { best = fabs(m[i * W + k]); piv = i; }
+		if (best < 1e-12) { ok = 0; break; }
+		if (piv != k) for (j = 0; j < W; j++) { double t = m[k * W + j]; m[k * W + j] = m[piv * W + j]; m[piv * W + j] = t; }
+		d = m[k * W + k];
+		for (j = 0; j < W; j++) m[k * W + j] /= d;
+		for (i = 0; i < P; i++) if (i != k) {
+			double f = m[i * W + k];
+			if (f != 0.0) for (j = 0; j < W; j++) m[i * W + j] -= f * m[k * W + j];
+		}
+	}
+	if (ok) for (i = 0; i < P; i++) for (j = 0; j < P; j++) inv[i * P + j] = m[i * W + P + j];
+	free(m);
+	return ok;
+}
 static void model_free(Model *g) {
 	int k;
 	free(g->etype); free(g->epar); free(g->ecov); free(g->bits); free(g->oofs); free(g->oadj); free(g->iofs); free(g->iadj); free(g->y);
@@ -388,6 +422,94 @@ STDLL stata_call(int argc, char *argv[]) {
 			}
 			for (e = 0; e < P; e++) SF_vstore(2, (ST_int)(1 + e), z[e]);
 			free(W); free(z);
+		}
+		else if (code == 31 || code == 32) {
+			char *t1 = strtok(NULL, " \t"), *t2 = strtok(NULL, " \t"), *t3 = strtok(NULL, " \t"), *t4 = strtok(NULL, " \t");
+			Rng rng;
+			double *theta = calloc(P, sizeof(double)), *z = calloc(P, sizeof(double));
+			signed char *W = malloc(n), *Z0 = calloc(n, 1);
+			long nsim, burn, interval, s, row = 0;
+			if (!t1 || !t2 || !t3 || !t4) { SF_error("alaam_sim: short argument string\n"); rc = 198; goto done2; }
+			rng_seed(&rng, (uint64_t)atof(t1)); cur_rng = &rng;
+			nsim = (long)atof(t2); burn = (long)atof(t3); interval = (long)atof(t4);
+			for (e = 0; e < P; e++) { char *x = strtok(NULL, " \t"); if (!x) { rc = 198; goto done2; } theta[e] = atof(x); }
+			if (ne < 1) { SF_error("alaam_sim: no node with an observed outcome\n"); rc = 198; goto done2; }
+			for (i = 0; i < n; i++) W[i] = (A[i] == 1) ? 1 : 0;
+			/* statistics of the starting outcomes */
+			for (i = 0; i < n; i++) if (A[i] == 1) {
+				for (e = 0; e < P; e++) z[e] += change_stat(&g, Z0, i, e);
+				Z0[i] = 1;
+			}
+			if (burn > 0) { sampler(&g, W, elig, ne, theta, 1, (int)burn, S1, S0, cs); for (e = 0; e < P; e++) z[e] += S1[e] - S0[e]; }
+			for (s = 0; s < nsim; s++) {
+				if (interval > 0) { sampler(&g, W, elig, ne, theta, 1, (int)interval, S1, S0, cs); for (e = 0; e < P; e++) z[e] += S1[e] - S0[e]; }
+				if (code == 31) { for (e = 0; e < P; e++) SF_vstore(2, (ST_int)(1 + row + e), z[e]); row += P; }
+				else { for (i = 0; i < n; i++) SF_vstore(2, (ST_int)(1 + row + i), A[i] < 0 ? SV_missval : (ST_double)W[i]); row += n; }
+			}
+		done2:
+			free(theta); free(z); free(W); free(Z0);
+		}
+		else if (code == 21) {
+			char *t1 = strtok(NULL, " \t"), *t2 = strtok(NULL, " \t"), *t3 = strtok(NULL, " \t"), *t4 = strtok(NULL, " \t");
+			char *t5 = strtok(NULL, " \t"), *t6 = strtok(NULL, " \t"), *t7 = strtok(NULL, " \t");
+			Rng rng;
+			double *theta = calloc(P, sizeof(double)), *dz = calloc(P, sizeof(double)), *mu = calloc(P, sizeof(double));
+			double *stv = calloc(P, sizeof(double)), *Cm = calloc((size_t)P * P, sizeof(double)), *Di = calloc((size_t)P * P, sizeof(double)), *avg = calloc(P, sizeof(double));
+			double gain;
+			int mprop, n1, n2, nsub, n3, k, it, j;
+			signed char *W = malloc(n);
+			if (!t1 || !t2 || !t3 || !t4 || !t5 || !t6 || !t7) { SF_error("alaam_sim: short argument string\n"); rc = 198; goto done3; }
+			rng_seed(&rng, (uint64_t)atof(t1)); cur_rng = &rng;
+			mprop = (int)atof(t2); n1 = (int)atof(t3); n2 = (int)atof(t4); nsub = (int)atof(t5); n3 = (int)atof(t6); gain = atof(t7);
+			for (e = 0; e < P; e++) { char *x = strtok(NULL, " \t"); if (!x) { rc = 198; goto done3; } theta[e] = atof(x); }
+			if (ne < 1) { SF_error("alaam_sim: no node with an observed outcome\n"); rc = 198; goto done3; }
+			for (i = 0; i < n; i++) W[i] = (A[i] == 1) ? 1 : 0;
+			/* phase 1: derivative matrix = covariance of the statistics at theta (the exponential family identity dE z / dtheta = Cov z) */
+			for (it = 0; it < n1; it++) {
+				sampler(&g, W, elig, ne, theta, 1, mprop, S1, S0, cs);
+				for (e = 0; e < P; e++) dz[e] += S1[e] - S0[e];
+				for (e = 0; e < P; e++) { mu[e] += dz[e]; for (j = 0; j < P; j++) Cm[e * P + j] += dz[e] * dz[j]; }
+			}
+			for (e = 0; e < P; e++) for (j = 0; j < P; j++) Cm[e * P + j] = Cm[e * P + j] / n1 - (mu[e] / n1) * (mu[j] / n1);
+			/* Levenberg damping: the covariance is poorly estimated, and can be nearly singular, when the chain sits in one state */
+			for (e = 0; e < P; e++) for (j = 0; j < P; j++) if (e != j) Cm[e * P + j] *= 0.7;
+			for (e = 0; e < P; e++) if (Cm[e * P + e] < 1e-3) Cm[e * P + e] = 1e-3;
+			if (!invert(Cm, Di, P)) {
+				/* singular: use the diagonal */
+				for (e = 0; e < P; e++) for (j = 0; j < P; j++) Di[e * P + j] = 0.0;
+				for (e = 0; e < P; e++) Di[e * P + e] = Cm[e * P + e] > 1e-12 ? 1.0 / Cm[e * P + e] : 1.0;
+			}
+			/* phase 2 */
+			for (k = 0; k < nsub; k++) {
+				int nk = n2 << k;
+				double a = gain / (double)(1 << k);
+				for (e = 0; e < P; e++) avg[e] = 0.0;
+				for (it = 0; it < nk; it++) {
+					sampler(&g, W, elig, ne, theta, 1, mprop, S1, S0, cs);
+					for (e = 0; e < P; e++) dz[e] += S1[e] - S0[e];
+					{
+						double mx = 0.0, sc = 1.0, *st = stv;
+						for (e = 0; e < P; e++) {
+							st[e] = 0.0;
+							for (j = 0; j < P; j++) st[e] += Di[e * P + j] * dz[j];
+							st[e] *= a;
+							if (fabs(st[e]) > mx) mx = fabs(st[e]);
+						}
+						if (mx > 0.25) sc = 0.25 / mx;
+						for (e = 0; e < P; e++) { theta[e] -= sc * st[e]; avg[e] += theta[e]; }
+					}
+				}
+				if (k == nsub - 1) for (e = 0; e < P; e++) theta[e] = avg[e] / nk;
+			}
+			/* phase 3: at the estimate, from the state reached (observed statistics are tracked through dz) */
+			for (e = 0; e < P; e++) SF_vstore(2, (ST_int)(1 + e), theta[e]);
+			for (e = 0; e < P; e++) SF_vstore(2, (ST_int)(1 + P + e), 0.0);
+			for (it = 0; it < n3; it++) {
+				sampler(&g, W, elig, ne, theta, 1, mprop, S1, S0, cs);
+				for (e = 0; e < P; e++) { dz[e] += S1[e] - S0[e]; SF_vstore(2, (ST_int)(1 + (long)(2 + it) * P + e), dz[e]); }
+			}
+		done3:
+			free(theta); free(dz); free(mu); free(stv); free(Cm); free(Di); free(avg); free(W);
 		}
 		else if (code == 12 || code == 20) {
 			char *t1 = strtok(NULL, " \t"), *t2 = strtok(NULL, " \t"), *t3 = strtok(NULL, " \t");

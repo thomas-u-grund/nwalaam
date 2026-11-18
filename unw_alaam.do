@@ -28,6 +28,13 @@ capture mata: mata drop AlaamFit()
 capture mata: mata drop AlaamDeltas()
 capture mata: mata drop AlaamStats()
 capture mata: mata drop AlaamChangeStats()
+capture mata: mata drop alaam_acf1()
+capture mata: mata drop alaam_append()
+capture mata: mata drop AlaamSim()
+capture mata: mata drop AlaamSA()
+capture mata: mata drop AlaamGofTable()
+capture mata: mata drop AlaamDiagTable()
+capture mata: mata drop AlaamGofStats()
 
 mata:
 mata set matastrict off
@@ -93,7 +100,7 @@ real scalar AlaamNativeAvailable()
 	return(fileexists(p))
 }
 
-real scalar ALAAM_PROTOCOL_NEEDED() return(1)
+real scalar ALAAM_PROTOCOL_NEEDED() return(3)
 
 /*
 	The plugin's frame. setup() writes the model (see the header of native/alaam_sim.c); call() runs one plugin code and
@@ -170,7 +177,7 @@ void AlaamNat::setup(real matrix adj, real scalar directed, real colvector y, re
 	nt = rows(E)
 	E = (floor((E :- 1) / n) :+ 1), (mod(E :- 1, n) :+ 1)
 	yy = editmissing(y, -1)
-	blob = (1 \ n \ directed \ P \ nt \ rows(cov) \ J(10, 1, 0)) \ vec((et \ ep \ ec)) \ vec(E') \ yy
+	blob = (ALAAM_PROTOCOL_NEEDED() \ n \ directed \ P \ nt \ rows(cov) \ J(10, 1, 0)) \ vec((et \ ep \ ec)) \ vec(E') \ yy
 	if (rows(cov) > 0) blob = blob \ vec(cov')
 	L = rows(blob)
 	nres = 0
@@ -410,16 +417,187 @@ void AlaamChangeStats(real matrix adj, real scalar directed, real colvector y, r
 	statistic, pseudo-likelihood estimate, Algorithm S start, EE estimate, standard error, t-ratio) and returns through
 	st_local: runs used, runs asked, mean acceptance rate. With mple = 1 only the pseudo-likelihood is computed.
 */
+// appends the effects (xt, xp, xc, xm, xcn) that are not yet in the list (et, ep, ec, nm, cn); returns the number of effects added.
+// Covariates are matched by name; xc refers to xcn.
+real scalar alaam_append(real rowvector et, real rowvector ep, real rowvector ec, string rowvector nm, string rowvector cn,
+		real rowvector xt, real rowvector xp, real rowvector xc, string rowvector xm, string rowvector xcn)
+{
+	real scalar k, add, c
+	string scalar cname
+
+	add = 0
+	for (k = 1; k <= cols(xt); k++) {
+		if (any(nm :== xm[k])) continue
+		c = 0
+		if (xc[k] > 0) {
+			cname = xcn[xc[k]]
+			if (!any(cn :== cname)) cn = cn, cname
+			c = selectindex(cn :== cname)
+		}
+		et = et, xt[k]; ep = ep, xp[k]; ec = ec, c; nm = nm, xm[k]
+		add++
+	}
+	return(add)
+}
+
+// lag-1 autocorrelation of every column
+real rowvector alaam_acf1(real matrix X)
+{
+	real rowvector out
+	real scalar j, m
+	real colvector x
+
+	out = J(1, cols(X), .)
+	m = rows(X)
+	for (j = 1; j <= cols(X); j++) {
+		x = X[., j] :- mean(X[., j])
+		if (cross(x, x) > 0) out[j] = cross(x[1..(m - 1)], x[2..m]) / cross(x, x)
+	}
+	return(out)
+}
+
+// nsim simulated outcome draws: statistics (vec = 0, nsim x P) or outcome vectors (vec = 1, nsim x n). The plugin model has
+// the effects of the fit followed by the extra effects (theta = 0 for those)
+real matrix AlaamSim(real matrix adj, real scalar directed, real colvector y, real rowvector et, real rowvector ep, real rowvector ec,
+		real matrix cov, real rowvector theta, real scalar nsim, real scalar burn, real scalar interval, real scalar seed, real scalar vec)
+{
+	class AlaamNat scalar N
+	real matrix out
+
+	N.open()
+	N.setup(adj, directed, y, et, ep, ec, cov)
+	out = N.call((vec ? "32 " : "31 ") + strofreal(N.L, "%18.0f") + " " + strofreal(seed, "%18.0f") + " " + strofreal(nsim, "%18.0f") + " " +
+		strofreal(burn, "%18.0f") + " " + strofreal(interval, "%18.0f") + " " + invtokens(strofreal(theta, "%25.17g")),
+		nsim * (vec ? rows(adj) : cols(et)))
+	N.close()
+	return(rowshape(out', nsim))
+}
+
+// observed statistics of the effects et/ep/ec at the outcome y
+real rowvector AlaamGofStats(real matrix adj, real scalar directed, real colvector y, real rowvector et, real rowvector ep, real rowvector ec,
+		real matrix cov)
+{
+	class AlaamNat scalar N
+	real rowvector z
+
+	N.open()
+	N.setup(adj, directed, y, et, ep, ec, cov)
+	z = AlaamStats(N, cols(et))
+	N.close()
+	return(z)
+}
+
+// goodness of fit: obs (1 x K), sim (nsim x K) -> res (K x 4: observed, simulated mean, simulated sd, t-ratio) and the Mahalanobis distance
+void AlaamGofTable(string scalar mobs, string scalar msim, string scalar mres, string scalar mmah)
+{
+	real rowvector o, mu, sd
+	real matrix S, C
+	real scalar d
+
+	o = st_matrix(mobs)
+	S = st_matrix(msim)
+	mu = mean(S)
+	sd = sqrt(diagonal(variance(S))')
+	st_matrix(mres, (o', mu', sd', ((mu :- o) :/ sd)'))
+	C = variance(S)
+	d = sqrt(max(((o :- mu) * pinv(C) * (o :- mu)', 0)))
+	st_matrix(mmah, d)
+}
+
+// per-run table: columns of RUNS are the estimate, convergence t-ratio, AC theta, AC dzA (P each)
+void AlaamDiagTable(string scalar mrun, real scalar P, real scalar thr, string scalar mout)
+{
+	real matrix R, O
+	real scalar k
+
+	R = st_matrix(mrun)
+	O = J(P, 7, .)
+	for (k = 1; k <= P; k++) {
+		O[k, 1] = mean(R[., k])
+		O[k, 2] = rows(R) > 1 ? sqrt(variance(R[., k])) : .
+		O[k, 3] = mean(R[., P + k])
+		O[k, 4] = max(abs(R[., P + k]))
+		O[k, 5] = sum(abs(R[., P + k]) :> thr)
+		O[k, 6] = mean(R[., 2 * P + k])
+		O[k, 7] = mean(R[., 3 * P + k])
+	}
+	st_matrix(mout, O)
+}
+
+// stochastic approximation (Snijders' Robbins-Monro): repeats the plugin's phases 1 to 3 from the previous estimate until every
+// convergence t-ratio is below 0.1 in absolute value (at most 20 repetitions). The covariance of the estimate is the inverse of the
+// batch-means covariance of the simulated statistics (the information) at the estimate.
+void AlaamSA(class AlaamNat scalar N, real scalar P, real rowvector zobs, real rowvector theta0, real scalar mprop, real scalar gain,
+		real scalar saiter, real scalar s0, real scalar seed, real matrix dg, string scalar mb, string scalar mV, string scalar mdiag,
+		string scalar mrun, string scalar mtrace)
+{
+	real scalar rep, n3, ok, drop, nr
+	real rowvector theta, tr
+	real matrix R, DZ, C, TR
+	real colvector sdv
+
+	n3 = 4 * saiter
+	theta = theta0
+	ok = 0
+	for (rep = 1; rep <= 20; rep++) {
+		nr = (2 + n3) * P
+		R = N.call("21 " + strofreal(N.L, "%18.0f") + " " + strofreal(seed + 7919 * rep + s0, "%18.0f") + " " + strofreal(mprop) + " " + strofreal(saiter) + " " +
+			strofreal(saiter) + " 4 " + strofreal(n3) + " 0.25" + " " + invtokens(strofreal(theta, "%25.17g")), nr)
+		R = rowshape(R', 2 + n3)
+		theta = R[1, .]
+		if (hasmissing(theta) | max(abs(theta)) > 1e10) {
+			// diverged: restart from the pseudo-likelihood-free start with smaller gain
+			theta = theta0
+			gain = gain / 2
+			continue
+		}
+		DZ = R[3::(2 + n3), .]
+		drop = ceil(n3 / 10)
+		DZ = DZ[(drop + 1)::n3, .]
+		sdv = sqrt(diagonal(variance(DZ)))
+		tr = (mean(DZ)' :/ sdv)'
+		if (max(abs(tr)) < 0.1) {
+			ok = 1
+			break
+		}
+	}
+	if (hasmissing(theta) | max(abs(theta)) > 1e10) {
+		N.close()
+		errprintf("{p 0 0 2}nwalaam: the stochastic approximation diverged (the model may be degenerate for this network; try fewer effects, or a smaller lrate()).{p_end}\n")
+		exit(430)
+	}
+	C = alaam_bmcov(DZ)
+	if (hasmissing(C) | rank(C) < P) {
+		N.close()
+		errprintf("{p 0 0 2}nwalaam: the simulated statistics are collinear at the estimate; the covariance matrix of the estimate cannot be computed.{p_end}\n")
+		exit(430)
+	}
+	dg[., 4] = theta'
+	dg[., 5] = sqrt(diagonal(invsym(C)))
+	dg[., 6] = tr'
+	dg[., 7] = J(P, 1, 0)
+	st_matrix(mb, theta)
+	st_matrix(mV, invsym(C))
+	st_matrix(mdiag, dg)
+	st_matrix(mrun, (theta, tr, alaam_acf1(theta \ theta), alaam_acf1(DZ)))
+	TR = (J(rows(DZ), P, .), DZ, J(rows(DZ), 1, .))
+	st_matrix(mtrace, TR)
+	st_local("runs_used", strofreal(rep > 20 ? 20 : rep))
+	st_local("accrate", ".")
+	st_local("sa_converged", strofreal(ok))
+}
+
 void AlaamFit(real matrix adj, real scalar directed, real colvector y, real rowvector et, real rowvector ep, real rowvector ec,
 		real matrix cov, real scalar mple, real scalar runs, real scalar M, real scalar thin, real scalar burn, real scalar mprop,
-		real scalar lr, real scalar seed, real scalar s0, string scalar mstart, string scalar mb, string scalar mV, string scalar mdiag)
+		real scalar lr, real scalar seed, real scalar s0, string scalar mstart, string scalar mb, string scalar mV, string scalar mdiag,
+		string scalar mrun, string scalar mtrace, real scalar sa, real scalar saiter)
 {
 	class AlaamNat scalar N
 	real scalar n, P, r, ns, used, tmax, conv, e, k, acc
 	real matrix D, R, Th, Dz, Corr, allDz, dg
 	real colvector ok, keep, tt, pp
 	real rowvector zobs, bmple, theta0, est, se, tr
-	real matrix EST, CV, MC, Vm, TC, Vmc
+	real matrix EST, CV, MC, Vm, TC, Vmc, RUNS, TR1
 
 	n = rows(adj)
 	P = cols(et)
@@ -440,6 +618,8 @@ void AlaamFit(real matrix adj, real scalar directed, real colvector y, real rowv
 			st_matrix(mV, invsym(cross(D[ok, .], pp :* (1 :- pp), D[ok, .])))
 		}
 		st_matrix(mdiag, dg)
+		st_matrix(mrun, J(0, 4 * P, .))
+		st_matrix(mtrace, J(0, 0, .))
 		st_local("runs_used", "0")
 		N.close()
 		return
@@ -448,9 +628,15 @@ void AlaamFit(real matrix adj, real scalar directed, real colvector y, real rowv
 	theta0 = st_matrix(mstart)
 	if (hasmissing(theta0)) theta0 = N.call("12 " + strofreal(N.L, "%18.0f") + " " + strofreal(s0, "%18.0f") + " 100 " + strofreal(mprop), P)'
 	dg[., 3] = theta0'
+	if (sa) {
+		AlaamSA(N, P, zobs, theta0, mprop, lr, saiter, s0, seed, dg, mb, mV, mdiag, mrun, mtrace)
+		N.close()
+		return
+	}
 	ns = ceil(M / thin)
 	EST = J(0, P, .); CV = J(0, P * P, .); MC = J(0, P * P, .)
 	allDz = J(0, P, .)
+	RUNS = J(0, 4 * P, .); TR1 = J(0, 0, .)
 	used = 0; acc = 0
 	for (r = 1; r <= runs; r++) {
 		R = N.call("20 " + strofreal(N.L, "%18.0f") + " " + strofreal(seed + 1000003 * r, "%18.0f") + " " + strofreal(M) + " " +
@@ -469,6 +655,9 @@ void AlaamFit(real matrix adj, real scalar directed, real colvector y, real rowv
 		CV = CV \ rowshape(invsym(TC), 1)
 		MC = MC \ rowshape(alaam_bmcov(Th) / rows(Th), 1)
 		allDz = allDz \ Dz
+		// per run: estimate, convergence t-ratio, lag-1 autocorrelation of theta and of dzA
+		RUNS = RUNS \ (mean(Th), mean(Dz) :/ sqrt(diagonal(variance(Dz))'), alaam_acf1(Th), alaam_acf1(Dz))
+		if (used == 0) TR1 = R[., .]
 		used++
 	}
 	if (used == 0) {
@@ -488,6 +677,8 @@ void AlaamFit(real matrix adj, real scalar directed, real colvector y, real rowv
 	st_matrix(mb, est)
 	st_matrix(mV, Vm)
 	st_matrix(mdiag, dg)
+	st_matrix(mrun, RUNS)
+	st_matrix(mtrace, TR1)
 	st_local("runs_used", strofreal(used))
 	st_local("accrate", strofreal(acc / used))
 	N.close()
