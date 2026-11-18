@@ -20,7 +20,7 @@ tempfile __scx
 local sc `"`__scx'_d"'
 capture mkdir `"`sc'"'
 capture erase `"`sc'/`pname'"'
-foreach f in nwalaam.ado _nwalaam_libcheck.ado nwalaam_version.ado {
+foreach f in nwalaam.ado _nwalaam_libcheck.ado nwalaam_version.ado _nwalaam_prep.ado _nwalaam_simulate.ado nwalaam_estat.ado {
 	quietly copy `"`root'/`f'"' `"`sc'/`f'"', replace
 }
 local r2 = subinstr(`"`root'"', "/", "\", .)
@@ -33,14 +33,15 @@ foreach r in `"`root'"' `"`r2'"' `"`r3'"' {
 adopath ++ `"`sc'"'
 capture program drop nwalaam
 capture program drop _nwalaam_libcheck
-capture noisily nwalaam faction karate, effects(density contagion) runs(2) iterations(1000)
+capture program drop _nwalaam_prep
+capture noisily nwalaam faction karate, effects(density contagion) method(ee) runs(2) iterations(1000)
 assert _rc == 601
 assert "`c(frame)'" == "default"
 di as text "  PASS: no plugin file -> r(601)"
 file open fh using `"`sc'/`pname'"', write text replace
 file write fh "this is not a plugin" _n
 file close fh
-capture noisily nwalaam faction karate, effects(density contagion) runs(2) iterations(1000)
+capture noisily nwalaam faction karate, effects(density contagion) method(ee) runs(2) iterations(1000)
 assert _rc == 3495
 assert "`c(frame)'" == "default"
 capture frame __nwalaam_native: describe
@@ -52,7 +53,7 @@ capture mkdir `"`sc2'"'
 quietly copy `"`plugsrc'"' `"`sc2'/`pname'"', replace
 capture shell chmod +x "`sc2'/`pname'"
 adopath ++ `"`sc2'"'
-nwalaam faction karate, effects(density contagion) runs(2) iterations(4000) thin(50) burnin(500) seed(1)
+nwalaam faction karate, effects(density contagion) method(ee) runs(2) iterations(4000) thin(50) burnin(500) seed(1)
 assert e(runs) == 2
 di as text "  PASS: with the plugin the model fits"
 di "test_nwalaam_noplugin: ALL OK"
