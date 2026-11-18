@@ -1,4 +1,4 @@
-* Corporate or litigation practice among the 71 lawyers of Lazega's law firm, given the friendship network (undirected):
+* Corporate or litigation practice among the 71 lawyers of Lazega's law firm, given the friendship network (directed):
 * are friends in the same kind of practice? Run in a fresh Stata with nwcommands and nwalaam installed:
 * do examples/lazega_alaam.do
 clear all
@@ -8,7 +8,7 @@ generate byte corporate = (practicenum == 2)
 quietly summarize age
 generate double age_c = age - r(mean)
 tabulate corporate
-nwalaam corporate lazega_fr, effects(density contagion activity ego(age_c)) seed(20261118)
+nwalaam corporate lazega_fr, effects(density contagion sender receiver ego(age_c)) seed(20261118)
 estat mcmcdiag
 estat gof, nsim(1000) seed(7)
 * a smaller model and the equilibrium-expectation estimate of ALAAMEE for comparison

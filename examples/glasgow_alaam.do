@@ -35,3 +35,8 @@ nwaltergen frsmoke = proportion(alter.smoker1==1), net(glasgow1)
 regress smoker1 frsmoke
 nwaltergen nsmokefr = sum(alter.smoker1), net(glasgow1)
 logit smoker1 nsmokefr
+* The exposure regression of Chapter 11 uses the wave-2 outcome and controls for the earlier smoking: its coefficient of frsmoke is
+* the association of wave-1 exposure with smoking at wave 2, given smoking at wave 1, a different quantity from the cross-sectional
+* contagion term above (which is on the log-odds scale and counts ties to smokers, not their share).
+generate byte smoker2 = (smoke2 > 1)
+regress smoker2 frsmoke smoker1
