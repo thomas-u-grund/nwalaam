@@ -117,7 +117,7 @@ real scalar AlaamNativeAvailable()
 	return(fileexists(p))
 }
 
-real scalar ALAAM_PROTOCOL_NEEDED() return(5)
+real scalar ALAAM_PROTOCOL_NEEDED() return(6)
 
 /*
 	The plugin's frame. setup() writes the model (see the header of native/alaam_sim.c); call() runs one plugin code and
@@ -696,11 +696,11 @@ void AlaamSA(class AlaamNat scalar N, real scalar P, real rowvector zobs, real r
 void AlaamFit(real matrix adj, real scalar directed, real colvector y, real rowvector et, real rowvector ep, real rowvector ec,
 		real matrix cov, real scalar mple, real scalar runs, real scalar M, real scalar thin, real scalar burn, real scalar mprop,
 		real scalar lr, real scalar seed, real scalar s0, string scalar mstart, string scalar mb, string scalar mV, string scalar mdiag,
-		string scalar mrun, string scalar mtrace, real scalar sa, real scalar saiter)
+		string scalar mrun, string scalar mtrace, real scalar sa, real scalar saiter, real scalar threads)
 {
 	class AlaamNat scalar N
-	real scalar n, P, r, ns, used, tmax, conv, e, k, acc
-	real matrix D, R, Th, Dz, Corr, allDz, dg
+	real scalar n, P, r, ns, used, tmax, conv, e, k, acc, per, chunk, r0, nrun
+	real matrix D, R, RR, Th, Dz, Corr, allDz, dg
 	real colvector ok, keep, tt, pp
 	real rowvector zobs, bmple, theta0, est, se, tr
 	real matrix EST, CV, MC, Vm, TC, Vmc, RUNS, TR1
@@ -744,11 +744,18 @@ void AlaamFit(real matrix adj, real scalar directed, real colvector y, real rowv
 	allDz = J(0, P, .)
 	RUNS = J(0, 4 * P, .); TR1 = J(0, 0, .)
 	used = 0; acc = 0
-	for (r = 1; r <= runs; r++) {
-		R = N.call("20 " + strofreal(N.L, "%18.0f") + " " + strofreal(seed + 1000003 * r, "%18.0f") + " " + strofreal(M) + " " +
-			strofreal(mprop) + " " + strofreal(thin) + " " + strofreal(lr, "%18.12g") + " " + invtokens(strofreal(theta0, "%25.17g")),
-			ns * (2 * P + 1))
-		R = rowshape(R', ns)
+	// the runs are executed by the plugin in chunks (parallel threads inside a chunk); a chunk holds at most about 4 million numbers
+	per = ns * (2 * P + 1)
+	chunk = max((1, min((runs, floor(4e6 / per)))))
+	for (r0 = 1; r0 <= runs; r0 = r0 + chunk) {
+	nrun = min((chunk, runs - r0 + 1))
+	RR = N.call("22 " + strofreal(N.L, "%18.0f") + " " + strofreal(seed, "%18.0f") + " " + strofreal(M) + " " +
+		strofreal(mprop) + " " + strofreal(thin) + " " + strofreal(lr, "%18.12g") + " " + strofreal(r0, "%18.0f") + " " +
+		strofreal(nrun, "%18.0f") + " " + strofreal(threads, "%18.0f") + " " + invtokens(strofreal(theta0, "%25.17g")),
+		nrun * per)
+	RR = rowshape(RR', nrun * ns)
+	for (r = r0; r < r0 + nrun; r++) {
+		R = RR[((r - r0) * ns + 1)::((r - r0 + 1) * ns), .]
 		tt = (0::(ns - 1)) * thin
 		keep = selectindex(tt :> burn)
 		if (rows(keep) < 20) continue
@@ -765,6 +772,7 @@ void AlaamFit(real matrix adj, real scalar directed, real colvector y, real rowv
 		RUNS = RUNS \ (mean(Th), mean(Dz) :/ sqrt(diagonal(variance(Dz))'), alaam_acf1(Th), alaam_acf1(Dz))
 		if (used == 0) TR1 = R[., .]
 		used++
+	}
 	}
 	if (used == 0) {
 		N.close()

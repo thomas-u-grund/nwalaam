@@ -1,4 +1,4 @@
-*! version 1.0.0  18nov2026 _nwalaam_prep
+*! version 1.1.0  18nov2026 _nwalaam_prep
 * Copyright (C) 2026 Thomas U. Grund. Part of nwalaam; GNU GPL-3 (see LICENSE).
 * reads the data of a fit into Mata objects (__nwalaam_*): outcome, covariates, the effects (and extra effects appended, for goodness of fit)
 capture program drop _nwalaam_prep

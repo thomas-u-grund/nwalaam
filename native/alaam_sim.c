@@ -33,8 +33,11 @@
 	           Robbins-Monro step theta -= gain/2^(k-1) * D^-1 * dz (dz = statistics of the current outcome minus the observed ones);
 	           the estimate is the mean of theta over the last subphase; phase 3: n3 iterations at the estimate. Result: P values of the
 	           estimate, P values of the mean of dz in phase 3 (not used), then n3 rows of P values of dz in phase 3
-	  code 20  EE run: "20 L seed M mprop thin lr theta_1 ... theta_P" -> for every saved iteration (t = 0, thin, 2 thin, ...):
-	           theta (P values), dzA (P values), acceptance rate (1 value), written one iteration after the other
+	  code 22  EE runs: "22 L seed M mprop thin lr r0 nrun nthreads theta_1 ... theta_P" -> nrun independent runs (run k has the seed
+	           seed + 1000003 (r0 + k)), executed by up to nthreads threads (0 = one per core, at most one per run); for every saved
+	           iteration of a run (t = 0, thin, 2 thin, ...): theta (P values), dzA (P values), acceptance rate (1 value); the rows of run k
+	           follow those of run k-1. The result does not depend on the number of threads (each run has its own generator and scratch
+	           memory and its own place in the output; the output is written by the calling thread).
 	Blob (doubles): [0] protocol [1] n [2] directed [3] P [4] number of ties listed [5] number of covariates (HDR = 16),
 	then P x (effect type, parameter, covariate number (1-based, 0 = none)), then the ties (from, to), 1-based (an undirected
 	tie once), then the outcome of every node (0, 1, or -1 = missing), then the covariates (n values each; missing = Stata missing).
@@ -46,9 +49,36 @@
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
+#if SYSTEM == STWIN32
+#include <windows.h>
+#include <process.h>
+#else
+#include <pthread.h>
+#include <unistd.h>
+#endif
 
-#define ALAAM_PROTOCOL 5
+#define ALAAM_PROTOCOL 6
 #define HDR 16
+
+/* Threads (only the independent EE runs use them; no Stata plugin interface call is made from a worker thread). */
+#if SYSTEM == STWIN32
+typedef HANDLE alaam_thread;
+#define ALAAM_THREAD_FN unsigned __stdcall
+#define ALAAM_THREAD_RET return 0
+static int thread_start(alaam_thread *t, unsigned (__stdcall *fn)(void *), void *arg) {
+	*t = (HANDLE)_beginthreadex(NULL, 0, fn, arg, 0, NULL);
+	return *t == 0 ? -1 : 0;
+}
+static void thread_join(alaam_thread t) { WaitForSingleObject(t, INFINITE); CloseHandle(t); }
+static int ncores(void) { SYSTEM_INFO si; GetSystemInfo(&si); return si.dwNumberOfProcessors > 0 ? (int)si.dwNumberOfProcessors : 1; }
+#else
+typedef pthread_t alaam_thread;
+#define ALAAM_THREAD_FN void *
+#define ALAAM_THREAD_RET return NULL
+static int thread_start(alaam_thread *t, void *(*fn)(void *), void *arg) { return pthread_create(t, NULL, fn, arg) == 0 ? 0 : -1; }
+static void thread_join(alaam_thread t) { pthread_join(t, NULL); }
+static int ncores(void) { long c = sysconf(_SC_NPROCESSORS_ONLN); return c > 0 ? (int)c : 1; }
+#endif
 
 typedef struct {
 	int n, directed, P, ncov;
@@ -388,22 +418,21 @@ static uint64_t rng_next(Rng *r) {
 }
 static double rng_unif(Rng *r) { return (double)(rng_next(r) >> 11) * (1.0 / 9007199254740992.0); }
 
-static Rng *cur_rng = NULL;   /* the generator of the running call */
 
 /* the zero-or-one sampler: a move to 0 or a move to 1 is chosen with probability 1/2 (when both are possible), then a node among the
    nodes with outcome 1 (resp. 0) uniformly; the Hastings ratio corrects for the numbers of nodes of both kinds before and after */
 static double pdown_of(int D, int ne) { return D == 0 ? 0.0 : (D == ne ? 1.0 : 0.5); }
 static double sampler_zoo(const Model *g, signed char *A, const int *elig, int ne, const double *theta, int perform,
-		int mprop, double *S1, double *S0, double *cs) {
+		int mprop, double *S1, double *S0, double *cs, Rng *rng) {
 	int m, e, k, acc = 0, no = 0, nz = 0;
 	int *ones = malloc((ne + 1) * sizeof(int)), *zeros = malloc((ne + 1) * sizeof(int)), *where = malloc(g->n * sizeof(int));
 	for (k = 0; k < ne; k++) { int i = elig[k]; if (A[i] == 1) { where[i] = no; ones[no++] = i; } else { where[i] = nz; zeros[nz++] = i; } }
 	for (e = 0; e < g->P; e++) { S1[e] = 0.0; S0[e] = 0.0; }
 	for (m = 0; m < mprop; m++) {
 		int D = no, to0, i, Dn;
-		double pd = pdown_of(D, ne), tot = 0.0, qf, qr;
-		to0 = pd >= 1.0 ? 1 : (pd <= 0.0 ? 0 : (rng_unif(cur_rng) < 0.5));
-		i = to0 ? ones[(int)(rng_unif(cur_rng) * no)] : zeros[(int)(rng_unif(cur_rng) * nz)];
+		double pd = pdown_of(D, ne), tot = 0.0, qf, qr, u;
+		to0 = pd >= 1.0 ? 1 : (pd <= 0.0 ? 0 : (rng_unif(rng) < 0.5));
+		i = to0 ? ones[(int)(rng_unif(rng) * no)] : zeros[(int)(rng_unif(rng) * nz)];
 		if (to0) A[i] = 0;
 		for (e = 0; e < g->P; e++) { cs[e] = change_stat(g, A, i, e); tot += theta[e] * cs[e]; }
 		if (to0) {
@@ -414,7 +443,8 @@ static double sampler_zoo(const Model *g, signed char *A, const int *elig, int n
 			Dn = D + 1; qf = (1.0 - pd) / (ne - D); qr = pdown_of(Dn, ne) / Dn;
 		}
 		tot += log(qr / qf);
-		if (rng_unif(cur_rng) < exp(tot)) {
+		u = rng_unif(rng);
+		if (tot >= 0.0 || u < exp(tot)) {
 			acc++;
 			if (perform) {
 				if (to0) { int w = where[i], last = ones[--no]; ones[w] = last; where[last] = w; where[i] = nz; zeros[nz++] = i; }
@@ -431,19 +461,19 @@ static double sampler_zoo(const Model *g, signed char *A, const int *elig, int n
 
 /* the toggle sampler: mprop proposals; S1 and S0 are the sums of the change statistics of accepted moves to 1 and to 0 */
 static double sampler(const Model *g, signed char *A, const int *elig, int ne, const double *theta, int perform,
-		int mprop, double *S1, double *S0, double *cs) {
+		int mprop, double *S1, double *S0, double *cs, Rng *rng) {
 	int m, e, acc = 0;
-	if (g->smode == 1) return sampler_zoo(g, A, elig, ne, theta, perform, mprop, S1, S0, cs);
+	if (g->smode == 1) return sampler_zoo(g, A, elig, ne, theta, perform, mprop, S1, S0, cs, rng);
 	for (e = 0; e < g->P; e++) { S1[e] = 0.0; S0[e] = 0.0; }
 	for (m = 0; m < mprop; m++) {
-		int i = elig[(int)(rng_unif(cur_rng) * ne)];
+		int i = elig[(int)(rng_unif(rng) * ne)];
 		int to0 = (A[i] == 1);
 		double tot = 0.0, u;
 		if (to0) A[i] = 0;
 		for (e = 0; e < g->P; e++) { cs[e] = change_stat(g, A, i, e); tot += theta[e] * cs[e]; }
 		if (to0) tot = -tot;
-		u = rng_unif(cur_rng);
-		if (u < exp(tot)) {
+		u = rng_unif(rng);
+		if (tot >= 0.0 || u < exp(tot)) {   /* exp(tot) >= 1 > u when tot >= 0: the same decision without the call */
 			acc++;
 			if (perform) { if (!to0) A[i] = 1; }
 			else if (to0) A[i] = 1;
@@ -587,6 +617,56 @@ static int eligible(const Model *g, int **elig) {
 	return ne;
 }
 
+
+/* One EE run: mprop proposals per iteration, M iterations, the state saved every thin-th iteration. Output (ns = ceil(M/thin) rows of
+   2P+1 values): theta, dzA, acceptance rate. Uses its own copy of the model's scratch memory, so runs may execute in parallel. */
+static void ee_run(const Model *g0, const int *elig, int ne, uint64_t seed, int M, int mprop, int thin, double lr, const double *theta0, double *out) {
+	Model g = *g0;
+	int n = g.n, P = g.P, e, t;
+	long row = 0;
+	Rng rng;
+	signed char *W = malloc(n);
+	double *theta = malloc(P * sizeof(double)), *dzA = calloc(P, sizeof(double)), *S1 = calloc(P, sizeof(double)), *S0 = calloc(P, sizeof(double)), *cs = calloc(P, sizeof(double));
+	int i;
+	g.cnt = calloc(n + 1, sizeof(int));
+	rng_seed(&rng, seed);
+	for (i = 0; i < n; i++) W[i] = (g0->y[i] == 1) ? 1 : 0;
+	memcpy(theta, theta0, P * sizeof(double));
+	for (t = 0; t < M; t++) {
+		double acc = sampler(&g, W, elig, ne, theta, 1, mprop, S1, S0, cs, &rng);
+		for (e = 0; e < P; e++) {
+			double step;
+			dzA[e] += S1[e] - S0[e];
+			step = fabs(theta[e]) > 0.01 ? fabs(theta[e]) : 0.01;
+			step *= lr * (dzA[e] > 0 ? 1.0 : (dzA[e] < 0 ? -1.0 : 0.0));
+			theta[e] -= step;
+		}
+		if (t % thin == 0) {
+			for (e = 0; e < P; e++) out[row + e] = theta[e];
+			for (e = 0; e < P; e++) out[row + P + e] = dzA[e];
+			out[row + 2 * P] = acc;
+			row += 2 * P + 1;
+		}
+	}
+	free(W); free(theta); free(dzA); free(S1); free(S0); free(cs); free(g.cnt);
+}
+
+typedef struct {
+	const Model *g; const int *elig; int ne;
+	int tid, T, nrun, M, mprop, thin;
+	uint64_t seed0, r0;       /* run k (0-based) has the seed seed0 + 1000003 * (r0 + k) */
+	double lr; const double *theta0;
+	double *out; size_t per;  /* run k writes its rows to out + k * per */
+} EEJob;
+
+static ALAAM_THREAD_FN ee_worker(void *arg) {
+	EEJob *j = (EEJob *)arg;
+	int k;
+	for (k = j->tid; k < j->nrun; k += j->T)
+		ee_run(j->g, j->elig, j->ne, j->seed0 + 1000003ULL * (j->r0 + (uint64_t)k), j->M, j->mprop, j->thin, j->lr, j->theta0, j->out + (size_t)k * j->per);
+	ALAAM_THREAD_RET;
+}
+
 STDLL stata_call(int argc, char *argv[]) {
 	char *buf, *tok;
 	int code, rc = 0;
@@ -637,7 +717,7 @@ STDLL stata_call(int argc, char *argv[]) {
 			signed char *W = malloc(n), *Z0 = calloc(n, 1);
 			long nsim, burn, interval, s, row = 0;
 			if (!t1 || !t2 || !t3 || !t4) { SF_error("alaam_sim: short argument string\n"); rc = 198; goto done2; }
-			rng_seed(&rng, (uint64_t)atof(t1)); cur_rng = &rng;
+			rng_seed(&rng, (uint64_t)atof(t1));
 			nsim = (long)atof(t2); burn = (long)atof(t3); interval = (long)atof(t4);
 			for (e = 0; e < P; e++) { char *x = strtok(NULL, " \t"); if (!x) { rc = 198; goto done2; } theta[e] = atof(x); }
 			if (ne < 1) { SF_error("alaam_sim: no node with an observed outcome\n"); rc = 198; goto done2; }
@@ -647,9 +727,9 @@ STDLL stata_call(int argc, char *argv[]) {
 				for (e = 0; e < P; e++) z[e] += change_stat(&g, Z0, i, e);
 				Z0[i] = 1;
 			}
-			if (burn > 0) { sampler(&g, W, elig, ne, theta, 1, (int)burn, S1, S0, cs); for (e = 0; e < P; e++) z[e] += S1[e] - S0[e]; }
+			if (burn > 0) { sampler(&g, W, elig, ne, theta, 1, (int)burn, S1, S0, cs, &rng); for (e = 0; e < P; e++) z[e] += S1[e] - S0[e]; }
 			for (s = 0; s < nsim; s++) {
-				if (interval > 0) { sampler(&g, W, elig, ne, theta, 1, (int)interval, S1, S0, cs); for (e = 0; e < P; e++) z[e] += S1[e] - S0[e]; }
+				if (interval > 0) { sampler(&g, W, elig, ne, theta, 1, (int)interval, S1, S0, cs, &rng); for (e = 0; e < P; e++) z[e] += S1[e] - S0[e]; }
 				if (code == 31) { for (e = 0; e < P; e++) SF_vstore(2, (ST_int)(1 + row + e), z[e]); row += P; }
 				else { for (i = 0; i < n; i++) SF_vstore(2, (ST_int)(1 + row + i), A[i] < 0 ? SV_missval : (ST_double)W[i]); row += n; }
 			}
@@ -666,14 +746,14 @@ STDLL stata_call(int argc, char *argv[]) {
 			int mprop, n1, n2, nsub, n3, k, it, j;
 			signed char *W = malloc(n);
 			if (!t1 || !t2 || !t3 || !t4 || !t5 || !t6 || !t7) { SF_error("alaam_sim: short argument string\n"); rc = 198; goto done3; }
-			rng_seed(&rng, (uint64_t)atof(t1)); cur_rng = &rng;
+			rng_seed(&rng, (uint64_t)atof(t1));
 			mprop = (int)atof(t2); n1 = (int)atof(t3); n2 = (int)atof(t4); nsub = (int)atof(t5); n3 = (int)atof(t6); gain = atof(t7);
 			for (e = 0; e < P; e++) { char *x = strtok(NULL, " \t"); if (!x) { rc = 198; goto done3; } theta[e] = atof(x); }
 			if (ne < 1) { SF_error("alaam_sim: no node with an observed outcome\n"); rc = 198; goto done3; }
 			for (i = 0; i < n; i++) W[i] = (A[i] == 1) ? 1 : 0;
 			/* phase 1: derivative matrix = covariance of the statistics at theta (the exponential family identity dE z / dtheta = Cov z) */
 			for (it = 0; it < n1; it++) {
-				sampler(&g, W, elig, ne, theta, 1, mprop, S1, S0, cs);
+				sampler(&g, W, elig, ne, theta, 1, mprop, S1, S0, cs, &rng);
 				for (e = 0; e < P; e++) dz[e] += S1[e] - S0[e];
 				for (e = 0; e < P; e++) { mu[e] += dz[e]; for (j = 0; j < P; j++) Cm[e * P + j] += dz[e] * dz[j]; }
 			}
@@ -692,7 +772,7 @@ STDLL stata_call(int argc, char *argv[]) {
 				double a = gain / (double)(1 << k);
 				for (e = 0; e < P; e++) avg[e] = 0.0;
 				for (it = 0; it < nk; it++) {
-					sampler(&g, W, elig, ne, theta, 1, mprop, S1, S0, cs);
+					sampler(&g, W, elig, ne, theta, 1, mprop, S1, S0, cs, &rng);
 					for (e = 0; e < P; e++) dz[e] += S1[e] - S0[e];
 					{
 						double mx = 0.0, sc = 1.0, *st = stv;
@@ -712,28 +792,27 @@ STDLL stata_call(int argc, char *argv[]) {
 			for (e = 0; e < P; e++) SF_vstore(2, (ST_int)(1 + e), theta[e]);
 			for (e = 0; e < P; e++) SF_vstore(2, (ST_int)(1 + P + e), 0.0);
 			for (it = 0; it < n3; it++) {
-				sampler(&g, W, elig, ne, theta, 1, mprop, S1, S0, cs);
+				sampler(&g, W, elig, ne, theta, 1, mprop, S1, S0, cs, &rng);
 				for (e = 0; e < P; e++) { dz[e] += S1[e] - S0[e]; SF_vstore(2, (ST_int)(1 + (long)(2 + it) * P + e), dz[e]); }
 			}
 		done3:
 			free(theta); free(dz); free(mu); free(stv); free(Cm); free(Di); free(avg); free(W);
 		}
-		else if (code == 12 || code == 20) {
+		else if (code == 12) {
 			char *t1 = strtok(NULL, " \t"), *t2 = strtok(NULL, " \t"), *t3 = strtok(NULL, " \t");
 			Rng rng;
-			double *theta = calloc(P, sizeof(double)), *dzA = calloc(P, sizeof(double));
-			int M, mprop, thin = 1, t;
-			double lr = 0.01;
+			double *theta = calloc(P, sizeof(double));
+			int M, mprop, t;
 			signed char *W = malloc(n);
 			if (!t1 || !t2 || !t3) { SF_error("alaam_sim: short argument string\n"); rc = 198; goto done; }
-			rng_seed(&rng, (uint64_t)atof(t1)); cur_rng = &rng;
+			rng_seed(&rng, (uint64_t)atof(t1));
 			M = (int)atof(t2); mprop = (int)atof(t3);
 			for (i = 0; i < n; i++) W[i] = (A[i] == 1) ? 1 : 0;
 			if (ne < 1) { SF_error("alaam_sim: no node with an observed outcome\n"); rc = 198; goto done; }
-			if (code == 12) {
+			{
 				double *D0 = calloc(P, sizeof(double));
 				for (t = 0; t < M; t++) {
-					sampler(&g, W, elig, ne, theta, 0, mprop, S1, S0, cs);
+					sampler(&g, W, elig, ne, theta, 0, mprop, S1, S0, cs, &rng);
 					for (e = 0; e < P; e++) {
 						double dz = S0[e] - S1[e], sc = S0[e] + S1[e], step, da = 0.0;
 						D0[e] += dz * dz;
@@ -746,31 +825,50 @@ STDLL stata_call(int argc, char *argv[]) {
 				free(D0);
 				for (e = 0; e < P; e++) SF_vstore(2, (ST_int)(1 + e), theta[e]);
 			}
-			else {
-				char *tt = strtok(NULL, " \t"), *tl = strtok(NULL, " \t");
-				long row = 0;
-				if (!tt || !tl) { SF_error("alaam_sim: short argument string\n"); rc = 198; goto done; }
-				thin = (int)atof(tt); lr = atof(tl);
-				for (e = 0; e < P; e++) { char *x = strtok(NULL, " \t"); if (!x) { rc = 198; goto done; } theta[e] = atof(x); }
-				for (t = 0; t < M; t++) {
-					double acc = sampler(&g, W, elig, ne, theta, 1, mprop, S1, S0, cs);
-					for (e = 0; e < P; e++) {
-						double step;
-						dzA[e] += S1[e] - S0[e];
-						step = fabs(theta[e]) > 0.01 ? fabs(theta[e]) : 0.01;
-						step *= lr * (dzA[e] > 0 ? 1.0 : (dzA[e] < 0 ? -1.0 : 0.0));
-						theta[e] -= step;
-					}
-					if (t % thin == 0) {
-						for (e = 0; e < P; e++) SF_vstore(2, (ST_int)(1 + row + e), theta[e]);
-						for (e = 0; e < P; e++) SF_vstore(2, (ST_int)(1 + row + P + e), dzA[e]);
-						SF_vstore(2, (ST_int)(1 + row + 2 * P), acc);
-						row += 2 * P + 1;
-					}
-				}
-			}
 		done:
-			free(theta); free(dzA); free(W);
+			free(theta); free(W);
+		}
+		else if (code == 22) {
+			/* "22 L seed M mprop thin lr r0 nrun nthreads theta_1 ... theta_P": nrun independent EE runs (run k with the seed
+			   seed + 1000003 (r0 + k)), executed by up to nthreads threads (0 = one per core); the rows of run k follow those of run k-1.
+			   The result does not depend on the number of threads. */
+			char *t1 = strtok(NULL, " \t"), *t2 = strtok(NULL, " \t"), *t3 = strtok(NULL, " \t"), *t4 = strtok(NULL, " \t");
+			char *t5 = strtok(NULL, " \t"), *t6 = strtok(NULL, " \t"), *t7 = strtok(NULL, " \t"), *t8 = strtok(NULL, " \t");
+			double *theta = calloc(P, sizeof(double)), *buf = NULL;
+			int M, mprop, thin, nrun, nthr, T, k;
+			uint64_t seed0, r0;
+			double lr;
+			size_t per, total, q;
+			EEJob *jobs = NULL;
+			alaam_thread *th = NULL;
+			char *started = NULL;
+			if (!t1 || !t2 || !t3 || !t4 || !t5 || !t6 || !t7 || !t8) { SF_error("alaam_sim: short argument string\n"); rc = 198; goto done22; }
+			seed0 = (uint64_t)atof(t1); M = (int)atof(t2); mprop = (int)atof(t3); thin = (int)atof(t4); lr = atof(t5);
+			r0 = (uint64_t)atof(t6); nrun = (int)atof(t7); nthr = (int)atof(t8);
+			for (e = 0; e < P; e++) { char *x = strtok(NULL, " \t"); if (!x) { rc = 198; goto done22; } theta[e] = atof(x); }
+			if (ne < 1) { SF_error("alaam_sim: no node with an observed outcome\n"); rc = 198; goto done22; }
+			if (M < 1 || thin < 1 || nrun < 1 || mprop < 1) { rc = 198; goto done22; }
+			per = (size_t)((M + thin - 1) / thin) * (size_t)(2 * P + 1);
+			total = per * (size_t)nrun;
+			buf = malloc(total * sizeof(double));
+			if (!buf) { SF_error("alaam_sim: not enough memory for the EE output\n"); rc = 909; goto done22; }
+			T = nthr > 0 ? nthr : ncores();
+			if (T > nrun) T = nrun;
+			if (T > 256) T = 256;
+			if (T < 1) T = 1;
+			jobs = calloc(T, sizeof(EEJob)); th = calloc(T, sizeof(alaam_thread)); started = calloc(T, 1);
+			for (k = 0; k < T; k++) {
+				EEJob *j = &jobs[k];
+				j->g = &g; j->elig = elig; j->ne = ne; j->tid = k; j->T = T; j->nrun = nrun; j->M = M; j->mprop = mprop; j->thin = thin;
+				j->seed0 = seed0; j->r0 = r0; j->lr = lr; j->theta0 = theta; j->out = buf; j->per = per;
+			}
+			/* thread 0 is the calling thread; the others are started (a failed start is run by the caller after its own share) */
+			for (k = 1; k < T; k++) started[k] = (thread_start(&th[k], ee_worker, &jobs[k]) == 0);
+			(void)ee_worker(&jobs[0]);
+			for (k = 1; k < T; k++) { if (started[k]) thread_join(th[k]); else (void)ee_worker(&jobs[k]); }
+			for (q = 0; q < total; q++) SF_vstore(2, (ST_int)(1 + q), buf[q]);
+		done22:
+			free(theta); free(buf); free(jobs); free(th); free(started);
 		}
 		else { SF_error("alaam_sim: unknown algorithm code (plugin and package versions do not match)\n"); rc = 198; }
 		free(A); free(cs); free(S1); free(S0); free(elig);

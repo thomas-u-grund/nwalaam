@@ -1,5 +1,5 @@
 {smcl}
-{* *! version 1.0.0  18nov2026 author: Thomas Grund}{...}
+{* *! version 1.1.0  18nov2026 author: Thomas Grund}{...}
 {marker topic}
 {title:Title}
 
@@ -49,6 +49,7 @@ undirected or directed, one-mode, or a two-mode network (see {help nwalaam##twom
 {synopt :{opt zone(varname)}}snowball sample: the zone (0, 1, ..., outermost) of every actor; the conditional sampler holds the outermost zone fixed{p_end}
 {synopt :{opt sampl:er(zoo)}}zero-or-one sampler for rare (or very common) outcomes; default: the toggle sampler{p_end}
 {synopt :{opt runs(#)}}{cmd:method(ee)}: independent runs; default {cmd:30}{p_end}
+{synopt :{opt thr:eads(#)}}{cmd:method(ee)}: number of threads that execute the independent runs; default: one per core of the computer, at most one per run; the result does not depend on it{p_end}
 {synopt :{opt iter:ations(#)}}{cmd:method(ee)}: iterations of every run; default {cmd:50000}{p_end}
 {synopt :{opt thin(#)}}{cmd:method(ee)}: every {it:#}th iteration is stored; default {cmd:100}{p_end}
 {synopt :{opt burn:in(#)}}{cmd:method(ee)}: iterations discarded at the start of every run; default {cmd:1000}{p_end}
@@ -85,6 +86,10 @@ every parameter by a relative step {cmd:lrate()} against the sign of the accumul
 statistics. {cmd:runs()} independent runs are made; the estimate is their mean. The covariance matrix is the inverse of the
 batch-means covariance of the accumulated differences (the information part, averaged over the runs) plus the Monte-Carlo
 variance of the mean of the runs. {cmd:e(tratio)} holds the convergence t-ratios; a ratio above 0.3 in absolute value is flagged, as in ALAAMEE.
+{cmd:threads()} sets how many runs are computed at the same time (default: one thread per core, never more threads than runs, so with the default
+{cmd:runs(30)} a computer with 20 cores works on 20 runs at once and the fit takes about the time of two runs). Every run has its own random-number stream, derived from {cmd:seed()}
+and the number of the run, and its own memory, so the estimates, the standard errors and the diagnostics are exactly the same for {cmd:threads(1)}, {cmd:threads(4)}
+and the default. Stochastic approximation, {cmd:mple}, {cmd:simulate} and {cmd:estat gof} follow one chain each and use one thread.
 
 {pstd}
 {bf:Which estimator.} Both estimators give standard errors that agree with the exact ones. They differ in the estimates: where the
@@ -260,4 +265,4 @@ scalars {cmd:e(N)}, {cmd:e(n_ones)}, {cmd:e(nodes)}, {cmd:e(runs)}, {cmd:e(runs_
 {p 4 8 2}Stivala, A. 2023. Overcoming near-degeneracy in the autologistic actor attribute model. arXiv:2309.07338.{p_end}
 
 {hline}
-{pstd}{it:nwalaam version 1.0.0, 18 November 2026}{p_end}{* nwversion}
+{pstd}{it:nwalaam version 1.1.0, 18 November 2026}{p_end}{* nwversion}

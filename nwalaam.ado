@@ -1,4 +1,4 @@
-*! version 1.0.0  18nov2026 nwalaam
+*! version 1.1.0  18nov2026 nwalaam
 * Copyright (C) 2026 Thomas U. Grund
 * This file is part of nwalaam, a Stata package for autologistic actor attribute models (ALAAMs). It follows the
 * method of the ALAAMEE software (Stivala, Wang and Lomi; MIT licence) and is written independently.
@@ -28,7 +28,7 @@ program nwalaam, eclass
 		}
 	}
 	syntax [anything(name=args)] [, EFFects(string) MPLE METHod(string) SAITer(integer 500) RUNs(integer 30) ITERations(integer 50000) THIN(integer 100) ///
-		BURNin(integer 1000) PROPosals(integer 1000) LRate(real 0.01) SEED(string) START(name) MODE(integer 1) ZONE(string) SAMPler(string) *]
+		BURNin(integer 1000) PROPosals(integer 1000) LRate(real 0.01) SEED(string) START(name) MODE(integer 1) ZONE(string) SAMPler(string) THReads(integer 0) *]
 	local __tabopts `"`options'"'
 	local method = lower(trim(`"`method'"'))
 	if "`mple'" != "" & "`method'" != "" & "`method'" != "mple" {
@@ -56,6 +56,10 @@ program nwalaam, eclass
 	}
 	if `runs' < 1 | `iterations' < 100 | `thin' < 1 | `burnin' < 0 | `proposals' < 1 | `lrate' <= 0 {
 		di as error "{p 0 0 2}runs() and proposals() must be at least 1, iterations() at least 100, thin() at least 1, burnin() not negative, lrate() positive.{p_end}"
+		error 198
+	}
+	if `threads' < 0 | `threads' > 256 {
+		di as error "threads() must be between 1 and 256 (default: one thread per core)"
 		error 198
 	}
 	if `thin' > `iterations' {
@@ -95,7 +99,7 @@ program nwalaam, eclass
 	else local __seed = `seed'
 	tempname B V DG RUNS TRC
 	capture noisily mata: AlaamFit(__nwalaam_adj, `__dir', __nwalaam_y, __nwalaam_et, __nwalaam_ep, __nwalaam_ec, __nwalaam_cov, ///
-		`=("`mple'" != "")', `runs', `iterations', `thin', `burnin', `proposals', `lrate', `__seed', `__seed' + 17, "`__S0'", "`B'", "`V'", "`DG'", "`RUNS'", "`TRC'", `=("`method'" == "sa")', `saiter')
+		`=("`mple'" != "")', `runs', `iterations', `thin', `burnin', `proposals', `lrate', `__seed', `__seed' + 17, "`__S0'", "`B'", "`V'", "`DG'", "`RUNS'", "`TRC'", `=("`method'" == "sa")', `saiter', `threads')
 	local __rc = _rc
 	capture mata: mata drop __nwalaam_*
 	if `__rc' exit `__rc'
@@ -123,7 +127,7 @@ program nwalaam, eclass
 	ereturn post `B' `V', obs(`__ny')
 	ereturn local cmd "nwalaam"
 	ereturn local estat_cmd "nwalaam_estat"
-	ereturn local version "1.0.0"
+	ereturn local version "1.1.0"
 	ereturn local depvar "`depvar'"
 	ereturn local network "`netname'"
 	ereturn local effects "`__names'"

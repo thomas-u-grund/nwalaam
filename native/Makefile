@@ -28,8 +28,8 @@ macos-alaam_sim:
 
 unix-alaam_sim:
 	mkdir -p ../lib/plugins/unix
-	gcc -shared -fPIC -DSYSTEM=OPUNIX $(CFLAGS) -o ../lib/plugins/unix/alaam_sim_unix.plugin \
-		alaam_sim.c spi/stplugin.c -ldl
+	gcc -shared -fPIC -DSYSTEM=OPUNIX $(CFLAGS) -pthread -o ../lib/plugins/unix/alaam_sim_unix.plugin \
+		alaam_sim.c spi/stplugin.c -ldl -lpthread
 	@echo "Built ../lib/plugins/unix/alaam_sim_unix.plugin"
 
 clean:

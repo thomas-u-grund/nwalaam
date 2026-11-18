@@ -12,3 +12,9 @@
 - **Stochastic approximation needs a damped derivative matrix.** From the Algorithm S start the covariance of the simulated statistics can be that of a single state (the chain does not move), and the full Newton step diverges (theta of 500 and more). The plugin shrinks the off-diagonal elements by 30 percent, floors the variances and caps the largest change of a coefficient at 0.25 per iteration.
 - **Mata `tbl = (a \ b \ ... )` with more than about 50 string elements stops with "too many tokens"**: build long tables in chunks (`tbl = tbl \ (...)`).
 - **A running Stata that has loaded the plugin is killed by macOS when the plugin file is rebuilt in place**: `rm` the plugin before copying; the Makefile writes through `lipo`, so do not rebuild while a test runs.
+
+## Threads in the plugin (1.1.0)
+The independent EE runs (`method(ee)`, plugin code 22) run in threads (pthreads on macOS and Linux, `_beginthreadex` on Windows). Rules that keep it correct:
+- No Stata plugin interface call (`SF_*`) from a worker thread: workers only fill their own part of a buffer, and the calling thread writes the buffer to the frame variable after all threads have finished.
+- Every run has its own generator (seed + 1000003 x run number) and its own scratch memory (`Model.cnt` is copied per run), so the result is the same for every number of threads (`test_nwalaam_threads.do`). New state that the samplers write to must be per run, never global (the old global `cur_rng` was removed for this reason).
+- The Linux build needs `-pthread` (Makefile); the Windows build (`cl /LD`, multithreaded CRT by default) needs nothing extra. SA, `simulate` and `estat gof` follow one chain each and stay single-threaded, because splitting a chain would change the results; the book examples print numbers from them.
