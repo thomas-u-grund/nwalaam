@@ -2,6 +2,7 @@ name: Build native plugins
 
 # Builds the native plugin(s) of nwalaam (alaam_sim) on macOS, Windows and Linux and commits the binaries
 # back into lib/plugins/ under per-platform-suffixed names (net install flattens all files into one folder).
+# The binaries are committed only after a push to main (a manual run builds and tests them but does not commit).
 # A platform whose binary is missing simply has no native acceleration or the command stops with a message.
 
 on:
