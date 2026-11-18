@@ -107,12 +107,6 @@ static double dir_f(int kind, double par, double n) {
 	if (kind == 1) return log(n + 1.0);
 	return pow(n, 1.0 / par);
 }
-static double dir_n(const Model *g, const signed char *A, int j) {
-	int k, c = 0;
-	for (k = 0; k < OUTDEG(g, j); k++) if (A[ONB(g, j, k)] == 1) c++;
-	for (k = 0; k < INDEG(g, j); k++) if (A[INB(g, j, k)] == 1) c++;
-	return (double)c;
-}
 
 /*
 	Change statistic of one effect for node i; A[i] must be 0 on entry.
@@ -284,22 +278,28 @@ static double change_stat(const Model *g, const signed char *A, int i, int e) {
 		case 122: return exp(-par * o);
 		case 123: return exp(-par * in);
 		case 125: case 126: case 127: {
-			/* gw/log/power contagion, directed: n(j) = the ties of j to nodes with the outcome (a mutual tie counts twice) */
-			int kind = type - 125;
-			double ni = 0.0;
-			for (k = 0; k < o; k++) if (A[ONB(g, i, k)] == 1) ni += 1.0;
-			for (k = 0; k < in; k++) if (A[INB(g, i, k)] == 1) ni += 1.0;
-			delta = dir_f(kind, par, ni);
+			/* gw/log/power contagion, directed, as ALAAMEE defines the change statistic: for the out-neighbours j of i with the outcome
+			   n(j) counts the in-neighbours of j with the outcome, for the in-neighbours the out-neighbours; plus f(.) of the number of
+			   out-neighbours (and, separately, of in-neighbours) of i with the outcome */
+			int kind = type - 125, di;
+			di = 0;
 			for (k = 0; k < o; k++) {
-				int j = ONB(g, i, k);
+				int j = ONB(g, i, k), c = 0;
 				if (A[j] != 1) continue;
-				{ double nj = dir_n(g, A, j), m = 1.0 + (isarc(g, j, i) ? 1.0 : 0.0); delta += dir_f(kind, par, nj + m) - dir_f(kind, par, nj); }
+				di++;
+				for (l = 0; l < INDEG(g, j); l++) if (A[INB(g, j, l)] == 1) c++;
+				delta += dir_f(kind, par, c + 1.0) - dir_f(kind, par, (double)c);
 			}
+			delta += dir_f(kind, par, (double)di);
+			di = 0;
 			for (k = 0; k < in; k++) {
-				int j = INB(g, i, k);
-				if (A[j] != 1 || isarc(g, i, j)) continue;
-				{ double nj = dir_n(g, A, j); delta += dir_f(kind, par, nj + 1.0) - dir_f(kind, par, nj); }
+				int j = INB(g, i, k), c = 0;
+				if (A[j] != 1) continue;
+				di++;
+				for (l = 0; l < OUTDEG(g, j); l++) if (A[ONB(g, j, l)] == 1) c++;
+				delta += dir_f(kind, par, c + 1.0) - dir_f(kind, par, (double)c);
 			}
+			delta += dir_f(kind, par, (double)di);
 			return delta;
 		}
 		case 128: case 129: case 130:

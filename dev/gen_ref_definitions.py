@@ -110,6 +110,23 @@ def z_dir(name, par, A, y, c, k, b):
     raise KeyError(name)
 
 
+def alaamee_dir_delta(nm, par, A, y, i, n):
+    f = {"gwcontagion": lambda m: math.exp(-par * m), "logcontagion": lambda m: math.log(m + 1),
+         "powercontagion": lambda m: m ** (1.0 / par)}[nm]
+    out_i = [j for j in range(n) if A[i][j]]
+    in_i = [j for j in range(n) if A[j][i]]
+    d = 0.0
+    for nbrs, other in ((out_i, lambda j: [v for v in range(n) if A[v][j]]), (in_i, lambda j: [v for v in range(n) if A[j][v]])):
+        dp = 0
+        for j in nbrs:
+            if y[j] == 1:
+                dp += 1
+                c = sum(y[v] for v in other(j))
+                d += f(c + 1) - f(c)
+        d += f(dp)
+    return d
+
+
 def write_case(name, n, directed, p, effects):
     A = [[0] * n for _ in range(n)]
     edges = []
@@ -136,6 +153,10 @@ def write_case(name, n, directed, p, effects):
             row = []
             for nm, par in effects:
                 base = nm
+                if directed and nm in ("gwcontagion", "logcontagion", "powercontagion"):
+                    # ALAAMEE defines these directed change statistics by formula (not as a difference of a statistic)
+                    row.append(repr(float(alaamee_dir_delta(nm, par, A, y0, i, n))))
+                    continue
                 row.append(repr(float(z(base, par, A, y1, c, k, b) - z(base, par, A, y0, c, k, b))))
             f.write(",".join(row) + "\n")
     print(name, n, len(edges), "ties,", sum(y), "ones")
