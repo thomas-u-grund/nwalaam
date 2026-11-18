@@ -1,0 +1,31 @@
+. nwalaam faction karate, effects(density activity contagion) method(ee) seed(20261118)
+----------------------------------------------------------------------
+Autologistic actor attribute model (equilibrium expectation)
+Outcome: faction (18 of 34)                    Network: karate
+EE runs used: 30 of 30                         Acceptance rate: 0.236
+----------------------------------------------------------------------
+-----------------------------------------------------
+     faction | Coefficient  Std. err.      z    P>|z|
+-------------+---------------------------------------
+     density |  -.0447766    1.02324    -0.04   0.965
+    activity |  -.7408897   .2532216    -2.93   0.003
+   contagion |   1.523324   .3602989     4.23   0.000
+-----------------------------------------------------
+All convergence t-ratios are within .3 in absolute value.
+
+. estat mcmcdiag
+
+Equilibrium-expectation diagnostics: 30 runs used of 30, 50,000 iterations each, thinned t
+> o every 100, burn-in 1,000
+Acceptance rate 0.236
+--------------------------------------------------------------------------------
+   Parameter |      Mean   SD runs    Mean t   Max |t|  Runs>.3 AC theta   AC dzA
+-------------+------------------------------------------------------------------
+     density |   -0.0448    0.0040   -0.0542    0.1467        0    0.984   -0.017
+    activity |   -0.7409    0.0089   -0.0091    0.1181        0    0.457   -0.018
+   contagion |    1.5233    0.0180    0.0033    0.1301        0    0.457   -0.019
+--------------------------------------------------------------------------------
+t is the convergence t-ratio of a run, mean(dzA)/sd(dzA) over the saved iterations after
+the burn-in; |t| <= .3 counts as converged. AC is the lag-1 autocorrelation of the saved
+(thinned) values of the coefficient and of dzA; values near 1 mean the thinning interval
+is too short for the number of runs to give independent information.

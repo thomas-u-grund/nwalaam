@@ -1,0 +1,35 @@
+. estat gof, nsim(1000) seed(7)
+
+Goodness of fit: 1,000 simulated outcome vectors from the fitted model (burn-in 10,000, in
+> terval 1,000)
+------------------------------------------------------------
+     Statistic |   Observed  Sim. mean    Sim. SD    t-ratio
+---------------+--------------------------------------------
+       density |     12.000     12.113      2.612      0.043
+     contagion |     14.000     14.335      6.067      0.055
+        sender |     26.000     26.331      6.380      0.052
+      receiver |     30.000     30.423      7.887      0.054
+     ego_alc_c |     13.440     13.666      2.802      0.080
+   ego_sport_c |      0.120      0.111      1.081     -0.008
+---------------+--------------------------------------------
+not in the model: |
+   reciprocity |     20.000     19.911      5.077     -0.018
+      outstar2 |     18.000     20.382      6.496      0.367 *
+       instar2 |     46.000     45.922     15.777     -0.005
+     mixedstar |     52.000     56.643     18.112      0.256
+   mixedsource |     48.000     45.129     12.160     -0.236
+     mixedsink |     75.000     61.750     17.497     -0.757 *
+contagionrecip |      5.000      5.333      2.501      0.133
+   transitive1 |     21.000     22.928      6.253      0.308 *
+   transitive3 |      8.000     10.284      7.156      0.319 *
+  transitived1 |     22.000     22.001      5.106      0.000
+  transitiveu1 |     27.000     26.372      7.554     -0.083
+       cyclic1 |     15.000     15.631      4.642      0.136
+       cyclic3 |      2.000      2.199      1.736      0.115
+  alterinstar2 |     13.000     10.196      5.430     -0.516 *
+ alteroutstar2 |     22.000     13.505      6.240     -1.361 *
+------------------------------------------------------------
+Mahalanobis distance of the observed statistics from the simulated ones:     5.208
+t-ratio = (simulated mean - observed) / simulated SD; * marks |t| > 0.3 (t-ratios of the
+statistics in the model should be near 0 after a converged fit; for the other
+statistics, values within about 0.3 indicate a good fit).

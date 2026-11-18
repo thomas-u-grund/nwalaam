@@ -1,0 +1,46 @@
+. nwalaam corporate lazega_fr, effects(density contagion sender receiver ego(age_c)) seed(
+> 20261118)
+----------------------------------------------------------------------
+Autologistic actor attribute model (stochastic approximation)
+Outcome: corporate (41 of 71)                  Network: lazega_fr
+SA repetitions: 2 (converged: yes)             Proposals per iteration: 1000
+----------------------------------------------------------------------
+-----------------------------------------------------
+   corporate | Coefficient  Std. err.      z    P>|z|
+-------------+---------------------------------------
+     density |  -.7099892    .827075    -0.86   0.391
+   contagion |   .3051304   .0447994     6.81   0.000
+      sender |  -.2015591   .0779018    -2.59   0.010
+    receiver |  -.0185176   .0900693    -0.21   0.837
+   ego_age_c |  -.0327189   .0282075    -1.16   0.246
+-----------------------------------------------------
+All convergence t-ratios are within .1 in absolute value.
+
+. nwalaam simulate, nsim(200) frame(simfr) seed(3)
+Simulated 200 outcome vectors on 71 actors, stored in frame simfr (seed 3, burn-in 10000 a
+> nd interval 1000 proposals).
+
+. frame simfr: collapse (sum) sim*
+
+. frame simfr: xpose, clear
+
+. frame simfr: summarize v1
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+          v1 |        200      38.945    20.92393          4         66
+
+. display "observed number of corporate lawyers: " e(n_ones)
+observed number of corporate lawyers: 41
+
+. nwalaam simulate, nsim(3) generate(draw) seed(4)
+Simulated 3 outcome vectors on 71 actors, stored in variables draw1 to draw3 (seed 4, burn
+> -in 10000 and interval 1000 proposals).
+
+. summarize draw1 draw2 draw3
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+       draw1 |         71    .3239437    .4713097          0          1
+       draw2 |         71    .1549296    .3644129          0          1
+       draw3 |         71    .2112676    .4111132          0          1

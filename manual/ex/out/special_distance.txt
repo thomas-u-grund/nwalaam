@@ -1,0 +1,18 @@
+. mata: ag = st_data(., "age"); st_matrix("DIST", abs(ag * J(1, rows(ag), 1) - J(rows(ag),
+>  1, 1) * ag'))
+
+. nwalaam corporate lazega_fr, effects(density contagion geographichomophily(DIST)) seed(2
+> 0261118)
+----------------------------------------------------------------------
+Autologistic actor attribute model (stochastic approximation)
+Outcome: corporate (41 of 71)                  Network: lazega_fr
+SA repetitions: 2 (converged: yes)             Proposals per iteration: 1000
+----------------------------------------------------------------------
+-----------------------------------------------------------------
+               corporate | Coefficient  Std. err.      z    P>|z|
+-------------------------+---------------------------------------
+                 density |  -2.259743    .741216    -3.05   0.002
+               contagion |   .2552149   .0663253     3.85   0.000
+geographichomophily_DIST |   .0000919   .0011684     0.08   0.937
+-----------------------------------------------------------------
+All convergence t-ratios are within .1 in absolute value.

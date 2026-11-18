@@ -1,0 +1,15 @@
+. nwalaam smoker1 glasgow1, effects(density contagion sender receiver) seed(20261118)
+----------------------------------------------------------------------
+Autologistic actor attribute model (stochastic approximation)
+Outcome: smoker1 (12 of 50)                    Network: glasgow1
+SA repetitions: 1 (converged: yes)             Proposals per iteration: 1000
+----------------------------------------------------------------------
+-----------------------------------------------------
+     smoker1 | Coefficient  Std. err.      z    P>|z|
+-------------+---------------------------------------
+     density |  -1.120924   .7140531    -1.57   0.116
+   contagion |   .7415663   .2825708     2.62   0.009
+      sender |  -.5224544     .39374    -1.33   0.185
+    receiver |   .0293046   .2652388     0.11   0.912
+-----------------------------------------------------
+All convergence t-ratios are within .1 in absolute value.

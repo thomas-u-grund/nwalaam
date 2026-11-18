@@ -1,0 +1,48 @@
+\chapter{Introduction}\label{ch:intro}
+
+\section{What \texorpdfstring{\nwalaam}{nwalaam} is}
+
+\nwalaam{} fits autologistic actor attribute models (ALAAMs) in Stata. The data of an ALAAM are one network, observed once, and one \emph{binary outcome} on its actors: who smokes, who adopted a practice, who took a side, who holds a position. The model asks why the outcome is distributed over the network as it is. Does an actor with the outcome tend to have ties to other actors with the outcome (contagion)? Do actors with many ties tend to have the outcome (activity)? Is the outcome related to a covariate, to the triangles an actor is in, or to a second network such as a shared workplace? The network is taken as given and fixed; the outcome is the random variable. The model is the counterpart of an exponential random graph model: there the ties are random, here the attributes of the actors are.
+
+\nwalaam{} is a Stata package of its own that builds on the \texttt{nwcommands} package. The network is an \texttt{nwcommands} network, the outcome and the covariates are variables of the dataset in memory, the effects are named in one option of one command, \texttt{nwalaam}, and the results are returned in \texttt{e()} like those of any Stata estimation command, so that \texttt{estimates store}, \texttt{test} and \texttt{lincom} work as usual. All computing is done in a compiled C plugin that is called from Mata; no Python, R or other external software is used when you fit a model.
+
+\section{Relation to \texorpdfstring{\alaamee}{ALAAMEE} and \texorpdfstring{\mpnet}{MPNet}}
+
+The reference implementations of the model are \alaamee{} (Python and R; Stivala, Wang and Lomi~\cite{stivala2024}) and \mpnet{} (Wang, Robins and Pattison~\cite{wang2009}). \nwalaam{} follows \alaamee{} in its effects, in the definitions of their change statistics, in its samplers, and in the equilibrium-expectation estimator (\opt{method(ee)}), and it follows \mpnet{} in the default estimator, stochastic approximation (\opt{method(sa)}). It is nevertheless an \emph{independent reimplementation} written in Stata, Mata and C. Chapter~\ref{ch:validation} documents what was compared and how. \nwalaam{} is not affiliated with, endorsed by or supported by the authors of either program.
+
+The most important facts for a user who knows the other programs are these.
+\begin{itemize}[nosep]
+  \item The default estimator is stochastic approximation, not equilibrium expectation. Where the exact maximum likelihood estimate can be computed (a small network), stochastic approximation reproduces it, whereas the equilibrium-expectation update of \alaamee{} stops at slightly different values (Section~\ref{sec:accuracy}). \opt{method(ee)} reproduces \alaamee{} and is the choice when results are to be compared with it.
+  \item Effects are named in the option \opt{effects()}, with the names listed in Chapter~\ref{ch:effects}; Appendix~\ref{app:translation} gives the correspondence with the change-statistic functions of \alaamee{}.
+  \item The outcome and the covariates are variables of the dataset; the network is an \texttt{nwcommands} network; setting networks and distance matrices are \texttt{nwcommands} networks and Stata or Mata matrices (Section~\ref{sec:setting}).
+  \item Undirected, directed and two-mode networks, setting networks, distance matrices, the zero-or-one sampler and the conditional sampler for snowball data are available (Chapters~\ref{ch:effects} and~\ref{ch:special}); the change statistics agree with those of \alaamee{} to rounding error (Chapter~\ref{ch:validation}).
+\end{itemize}
+
+\section{What is covered}
+
+\begin{itemize}[nosep]
+  \item \textbf{Estimators.} Stochastic approximation (the default), equilibrium expectation as in \alaamee{}, and the maximum pseudo-likelihood estimate (Chapter~\ref{ch:estimation}).
+  \item \textbf{Effects.} 27 effects for undirected networks and 37 for directed networks, three further effects that use a setting network or a distance matrix, and 19 effects for two-mode networks (Chapter~\ref{ch:effects}).
+  \item \textbf{Data features.} Missing outcomes, two-mode networks with the outcome on either level, a setting network, a distance matrix, snowball samples, rare outcomes (Chapter~\ref{ch:special}).
+  \item \textbf{Postestimation.} Goodness of fit with simulated outcomes (\texttt{estat gof}), convergence diagnostics (\texttt{estat mcmcdiag}) and simulation from the model (\texttt{nwalaam simulate}) (Chapter~\ref{ch:postest}).
+\end{itemize}
+
+\paragraph{What \alaamee{} and \mpnet{} have that \nwalaam{} does not.} Chapter~\ref{ch:limits} lists it: a continuous or categorical outcome, valued ties (a valued network is used as binary), a longitudinal outcome (use \texttt{nwsaom} for that) and the specific effect sets of \mpnet{} that are not in \alaamee{}.
+
+\section{Installation and requirements}\label{sec:install}
+
+\nwalaam{} needs the \texttt{nwcommands} core package (version 3.26.0 or later; the examples of this manual were run with core 3.27.0) and Stata 17 or later. Install the core first and then \nwalaam{}:
+\begin{lstlisting}
+. net install nwcommands, from(https://nwcommands.org/net/) replace
+. nwinstall, all
+. nwinstall, modelpkg(nwalaam)
+\end{lstlisting}
+(\texttt{nwinstall, everything} installs the core and all model packages in one step.) To install a given release, use the tag in the address, for example \texttt{net install nwalaam, from(https://raw.githubusercontent.com/thomas-u-grund/nwalaam/v1.1.1/) replace}. \texttt{nwalaam version} prints the release of the package, the compiled plugin in use and the programs the results were compared with:
+\begin{lstlisting}
+. nwalaam version
+\end{lstlisting}
+The package ships a compiled plugin for macOS, Linux and Windows. It is installed with the package and found automatically. There is no slower fallback: without a working plugin \nwalaam{} stops with return code 601 (the plugin file is missing) or 3495 (the plugin is older than the package or cannot be loaded). If the plugin of your platform is missing or does not work, \texttt{nwinstall, buildplugin(nwalaam)} compiles it on your computer (a C compiler is needed). The Mata library of the package is built with Stata 17; \texttt{nwinstall, buildmata(nwalaam)} rebuilds it with the Stata that you run.
+
+\section{Conventions of this manual}
+
+Commands are shown with the Stata prompt \texttt{.}; output is pasted from runs of the do-files that come with the manual (the examples were produced with Stata 17 on a Mac and the version of the package named on the title page). Random numbers are seeded, so the listings can be reproduced exactly with the same version of the package; the seeds are ordinary arguments, not special values. Effect names are set in typewriter type, \emph{outcome} is the binary variable and \emph{network} the name of an \texttt{nwcommands} network.

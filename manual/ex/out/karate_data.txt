@@ -1,0 +1,34 @@
+. import delimited "data/karate_edges.csv", clear
+(encoding automatically selected: ISO-8859-2)
+(2 vars, 78 obs)
+
+. nwfromedge from to, undirected name(karate)
+
+. import delimited "data/karate_nodes.csv", clear
+(encoding automatically selected: ISO-8859-1)
+(7 vars, 34 obs)
+
+. tabulate faction
+
+    faction |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |         16       47.06       47.06
+          1 |         18       52.94      100.00
+------------+-----------------------------------
+      Total |         34      100.00
+
+. nwsummarize karate
+--------------------------------------------------
+   Network name:  karate
+   Network id:  1
+   Directed: false
+   Valued: false
+   Two-mode: false
+   Nodes: 34
+   Selfloop: false
+   Edges: 78
+   Minimum value:  0
+   Maximum value:  1
+   Density:  .139
+   Mean degree:  4.59
+   Temporal: false

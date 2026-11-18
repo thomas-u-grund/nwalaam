@@ -1,0 +1,47 @@
+\chapter{Effects of \texorpdfstring{\nwalaam}{nwalaam} and the functions of \texorpdfstring{\alaamee}{ALAAMEE}}\label{app:translation}
+
+\alaamee{} names its effects after the Python functions that compute their change statistics (module \texttt{changeStatisticsALAAM} for undirected networks, \texttt{changeStatisticsALAAMdirected} for directed networks, \texttt{changeStatisticsALAAMbipartite} for two-mode networks). The table gives, for each effect of \nwalaam{}, the function of \alaamee{} that its change statistic was compared with (Chapter~\ref{ch:validation}); the third column gives the names of the statistics in \mpnet{}'s output for the statistics of the karate club example.
+
+\begin{longtable}{@{}p{0.26\textwidth}p{0.45\textwidth}p{0.23\textwidth}@{}}
+\toprule \nwalaam{} (undirected) & \alaamee{} function & \mpnet{} name \\ \midrule \endhead
+\opt{density} & changeDensity & Density \\
+\opt{activity} & changeActivity & Activity \\
+\opt{twostar}, \opt{threestar} & changeTwoStar, changeThreeStar & Ego2Star (\opt{twostar}) \\
+\opt{gwactivity} & changeGWActivity & \\
+\opt{contagion} & changeContagion & Contagion \\
+\opt{alter2star1} & changePartnerActivityTwoPath & Alter2Star1 \\
+\opt{alter2star2} & changeIndirectPartnerAttribute & Alter2Star2 \\
+\opt{partneractivity} & changePartnerAttributeActivity & \\
+\opt{partnerpartner} & changePartnerPartnerAttribute & \\
+\opt{triangle1}, \opt{triangle2}, \opt{triangle3} & changeTriangleT1, T2, T3 & T1, T2, T3 \\
+\opt{gwcontagion}, \opt{logcontagion}, \opt{powercontagion} & changeGWContagion, changeLogContagion, changePowerContagion & \\
+\opt{ego(var)} & changeoOc (continuous), changeoOb (binary) & \\
+\opt{alter(var)} & changeo\_Oc, changeo\_Ob & \\
+\opt{same(var)}, \opt{diff(var)} & changeoO\_Osame, changeoO\_Odiff & \\
+\opt{samecontagion(var)} & changeoO\_OsameContagion & \\
+\opt{samepartneractivity(var)}, \opt{diffpartneractivity(var)} & changeSamePartnerActivityTwoPath, changeDiffPartnerActivityTwoPath & \\
+\opt{sameindirect(var)}, \opt{diffindirect(var)} & changeSameIndirectPartnerAttribute, changeDiffIndirectPartnerAttribute & \\
+\opt{alterbinarytwostar1(var)}, \opt{alterbinarytwostar2(var)} & changeAlterBinaryTwoStar1, changeAlterBinaryTwoStar2 & \\
+\opt{settinghomophily(network)} & changeSettingHomophily & \\
+\opt{geographichomophily(matname)} & changeGeographicHomophily & \\
+\opt{contagiondist(matname)} & changeContagionDist & \\
+\bottomrule
+\end{longtable}
+
+\begin{longtable}{@{}p{0.30\textwidth}p{0.66\textwidth}@{}}
+\toprule \nwalaam{} (directed) & \alaamee{} function \\ \midrule \endhead
+\opt{density}, \opt{ego(var)}, \opt{settinghomophily()}, \opt{geographichomophily()} & as for undirected networks \\
+\opt{sender}, \opt{receiver}, \opt{reciprocity} & changeSender, changeReceiver, changeReciprocity \\
+\opt{instar2}, \opt{instar3}, \opt{outstar2}, \opt{outstar3} & changeEgoInTwoStar, changeEgoInThreeStar, changeEgoOutTwoStar, changeEgoOutThreeStar \\
+\opt{mixedstar}, \opt{mixedsource}, \opt{mixedsink} & changeMixedTwoStar, changeMixedTwoStarSource, changeMixedTwoStarSink \\
+\opt{contagion}, \opt{contagionrecip} & changeContagion, changeContagionReciprocity \\
+\opt{gwcontagion}, \opt{logcontagion}, \opt{powercontagion} & changeGWContagion, changeLogContagion, changePowerContagion \\
+\opt{transitive1}, \opt{transitive3}, \opt{transitived1}, \opt{transitiveu1} & changeTransitiveTriangleT1, T3, D1, U1 \\
+\opt{cyclic1}, \opt{cyclic3} & changeCyclicTriangleC1, C3 \\
+\opt{alterinstar2}, \opt{alteroutstar2} & changeAlterInTwoStar2, changeAlterOutTwoStar2 \\
+\opt{gwsender}, \opt{gwreceiver} & changeGWSender, changeGWReceiver \\
+\opt{sendermatch}, \opt{sendermismatch}, \opt{receivermatch}, \opt{receivermismatch}, \opt{reciprocitymatch}, \opt{reciprocitymismatch} & changeSenderMatch, changeSenderMismatch, changeReceiverMatch, changeReceiverMismatch, changeReciprocityMatch, changeReciprocityMismatch \\
+\bottomrule
+\end{longtable}
+
+For two-mode networks the functions of the module \texttt{changeStatisticsALAAMbipartite} are the counterparts: changeBipartiteDensity, changeBipartiteActivity, changeBipartiteEgoTwoStar and ...ThreeStar, changeBipartiteGWActivity, changeBipartiteAlterTwoStar1 and 2, changeBipartiteFourCycle1 and 2 (\opt{fourcycle1}, \opt{fourcycle2}), changeBpAlterSameTwoStar1 and 2 and changeBpAlterDiffTwoStar1 and 2 (the partner and indirect effects with a categorical covariate), and changeBpAlterBinaryTwoStar1 and 2.

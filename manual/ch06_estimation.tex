@@ -1,0 +1,52 @@
+\chapter{Estimation}\label{ch:estimation}
+
+\section{Stochastic approximation (the default)}\label{sec:sa}
+
+\opt{method(sa)} is stochastic approximation in the manner of Snijders~\cite{snijders2002}, the algorithm of \mpnet{}. Starting from values found by Algorithm S, a Robbins--Monro procedure moves the coefficients so that the expected statistics of the model equal the observed ones, which is the maximum likelihood condition (\ref{eq:moment}): in each iteration it simulates outcomes with the Metropolis sampler, compares the simulated statistics with the observed ones, and moves the coefficients by the difference, scaled by the inverse of the covariance of the simulated statistics (the derivative matrix). The procedure runs through three phases of decreasing step size and averages the coefficients over the last subphase. It is then \emph{repeated from its result}, up to 20 times, until the convergence statistics (the mean over the standard deviation of the difference between simulated and observed statistics in a final phase at the estimate) are all below $0.1$ in absolute value; the header of the output states how many repetitions were needed and whether the criterion was reached.
+
+The covariance matrix of the estimate is the inverse of the covariance of the simulated statistics at the estimate (the Fisher information of the model). The standard errors agree with the exact ones where those can be computed (Section~\ref{sec:accuracy}). \opt{saiter()} lengthens the phases, \opt{proposals()} the number of proposals per iteration.
+
+\section{Equilibrium expectation}\label{sec:ee}
+
+\opt{method(ee)} is the equilibrium-expectation (EE) algorithm of Borisenko, Byshkin and Lomi~\cite{borisenko2019} in the form used by \alaamee{}~\cite{stivala2024}. Every iteration proposes toggles of the outcome of a random actor, accepts each with the Metropolis probability, and moves every parameter by a relative step \opt{lrate()} against the sign of the accumulated difference between the simulated and the observed statistics. \opt{runs()} independent runs are made; the estimate is their mean. The covariance matrix is the inverse of the batch-means covariance of the accumulated differences (the information part, averaged over the runs) plus the Monte Carlo variance of the mean of the runs. The convergence statistics (\texttt{e(tratio)}) are those of \alaamee{}: a run is flagged when the mean of the accumulated difference over its standard deviation exceeds $0.3$ in absolute value, and the header states how many runs were used.
+\showlog{karate_ee}
+The output of \texttt{estat mcmcdiag} after an EE fit shows, for every coefficient, the mean and the standard deviation over the runs, the mean and maximum convergence statistic, the number of runs beyond the threshold (\opt{threshold()}, default $0.3$) and the lag-1 autocorrelation of the thinned values of the coefficient and of the difference. A high autocorrelation of the coefficient (the density row above) means that the thinning interval is too short for the number of iterations to give independent information on that coefficient.
+
+\section{Threads}\label{sec:threads}
+
+The independent runs of \opt{method(ee)} are computed at the same time by \opt{threads(\#)} threads (macOS, Linux and Windows). The default is one thread per core of the computer, never more than there are runs, so with the default 30 runs a computer with 20 cores works on 20 runs at once and the fit takes about the time of two runs. Every run has its own random-number stream, derived from \opt{seed()} and the number of the run, and its own memory, so the estimates, the standard errors and the diagnostics are exactly the same for \opt{threads(1)}, \opt{threads(8)} and the default. The listing below fits the same model twice and compares the coefficient vectors (the times depend on the computer and its load):
+\showlog{lazega_threads}
+Stochastic approximation, \opt{mple}, \texttt{nwalaam simulate} and \texttt{estat gof} follow one chain each and use one thread.
+
+\section{Maximum pseudo-likelihood}\label{sec:mple}
+
+\opt{mple} fits the logit of the outcome on the change statistics: the log odds of each actor are treated as independent, which they are not. The estimate is computed at once, without sampling, and is useful as a starting value and for a first look; its standard errors are too small and its estimates are biased where the dependence is strong, so it should not be used for inference. The pseudo-likelihood estimate does not exist when the outcome is perfectly predicted by the change statistics. The karate club is an example: with density, activity and contagion the estimate does not exist (error 430), and with density and contagion alone it does:
+\showlog{karate_mple}
+\texttt{e(b\_mple)} holds the pseudo-likelihood estimate that the other estimators compute for their starting values; it is missing when it does not exist.
+
+\section{Accuracy of the estimators}\label{sec:accuracy}
+
+On a small network the exact maximum likelihood estimate can be computed by enumerating all $2^n$ outcome vectors, so the estimators can be checked against it. For the karate club ($n=34$) this was done by enumerating all $2^{34}$ vectors, tabulating the three statistics (the number of different values of density, activity and contagion is small) and solving the likelihood equation with Newton's method. Table~\ref{tab:accuracy} compares the exact estimate with the estimators.
+
+\begin{table}[ht]
+\centering\small
+\begin{tabular}{@{}lrrrr@{}}
+\toprule & Density & Activity & Contagion & \\ \midrule
+Exact maximum likelihood & 0.535 & $-0.832$ & 1.461 & \\
+\quad standard error & 0.941 & 0.295 & 0.394 & \\
+\nwalaam{}, \opt{method(sa)} (listing above) & 0.540 & $-0.840$ & 1.476 & \\
+\quad standard error & 0.951 & 0.304 & 0.405 & \\
+\nwalaam{}, \opt{method(ee)} (listing above) & $-0.045$ & $-0.741$ & 1.523 & \\
+\alaamee{} (Python, equilibrium expectation, mean of eight runs) & $-0.033$ & $-0.742$ & 1.600 & \\
+\mpnet{} (published with \alaamee{}) & 0.381 & $-0.798$ & 1.452 & \\
+\quad standard error & 0.906 & 0.292 & 0.400 & \\
+\bottomrule
+\end{tabular}
+\caption{The karate club (faction as outcome; density, activity and contagion): the exact maximum likelihood estimate and the estimates of the programs.}\label{tab:accuracy}
+\end{table}
+
+Stochastic approximation reproduces the exact estimate within a small fraction of a standard error, and its standard errors are within a few percent of the exact ones. The equilibrium-expectation update stops at different values: the density coefficient differs from the exact one by about 0.6 standard errors, in the same way for \nwalaam{}'s \opt{method(ee)} and for \alaamee{}'s own program, so it is a property of the algorithm as used by both and not of the implementation. On a random network of 16 actors the equilibrium-expectation estimates lie 0.15 to 0.24 standard errors from the exact ones. The difference is small compared with the standard error of a single analysis, but systematic; for that reason stochastic approximation is the default, and \opt{method(ee)} is the choice when results are to be compared with those of \alaamee{}.
+
+\paragraph{Standard errors of the equilibrium-expectation estimate.} On larger networks, the equilibrium-expectation standard errors can be too small. A comparison on an example with 500 actors, with a parametric bootstrap (simulating outcomes from the fit, refitting and comparing the spread of the estimates), showed standard errors below the bootstrap's. Check them against a parametric bootstrap before relying on them in a paper; those of stochastic approximation did agree with the exact ones where those could be computed.
+
+\paragraph{Which estimator to use.} Use the default, stochastic approximation. Use \opt{method(ee)} when you want to reproduce an analysis made with \alaamee{}, when the independent runs can be spread over many cores, or as a check: two estimators that agree give more confidence than one. Use \opt{mple} for starting values and a quick look.

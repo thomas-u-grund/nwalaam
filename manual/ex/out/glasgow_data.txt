@@ -1,0 +1,12 @@
+. nwwebuse glasgow, nwclear
+
+. generate byte smoker1 = (smoke1 > 1)
+
+. tabulate smoker1
+
+    smoker1 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |         38       76.00       76.00
+          1 |         12       24.00      100.00
+------------+-----------------------------------
+      Total |         50      100.00

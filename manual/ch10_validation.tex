@@ -1,0 +1,39 @@
+\chapter{Validation}\label{ch:validation}
+
+The correctness of \nwalaam{} rests on numerical comparisons that the test suite of the package repeats. They are listed here with what was compared and to what accuracy; the programs against which the comparisons are made are \alaamee{}~\cite{stivala2024} and the exact distribution of the model on networks small enough to enumerate.
+
+\section{Change statistics compared with ALAAMEE}
+
+For random networks with missing outcomes and covariates the change statistic of every effect for every actor was computed by the Python program \alaamee{} (without taking any code of it into the package) and by \nwalaam{}. The cases are undirected, directed and two-mode networks, with a setting network and a distance matrix for the effects that need them, and a binary, a continuous and a categorical covariate; six networks in all. The two sets of numbers agree to a difference of at most $10^{-15}$ for every effect that both programs have (27 effects for undirected, 37 for directed, 19 for two-mode networks, and the setting and distance effects). The reference values are stored with the test, so it runs without \alaamee{}.
+
+\section{The definitions}
+
+The change statistics of the plugin are also compared with the definitions of the statistics. For four random networks (two undirected, two directed) the statistic of every effect was computed as a count over the whole outcome vector, with the outcome of an actor set to 1 and to 0, and the difference was compared with the change statistic of the plugin for every actor.
+
+\section{The exact distribution}
+
+For networks small enough that all outcome vectors can be enumerated, the maximum likelihood estimate and the Fisher information are computed exactly and compared with the estimators.
+\begin{itemize}[nosep]
+  \item \textbf{A random network of 16 actors} ($2^{16}$ outcome vectors): the stochastic-approximation estimate and standard errors agree with the exact ones (the standard errors within a few percent); the equilibrium-expectation estimates lie 0.15 to 0.24 standard errors away (Section~\ref{sec:accuracy}).
+  \item \textbf{The karate club} ($2^{34}$ vectors, enumerated in a dedicated program that tabulates the statistics): Table~\ref{tab:accuracy}. The stochastic-approximation estimate, averaged over four fits with different seeds, lies within a tenth of an exact standard error of the exact estimate; every single fit within 0.4 of it.
+  \item \textbf{The extensions}: the zero-or-one sampler with a setting network, a distance matrix and the contagion-distance effect (12 actors), a two-mode network with the outcome on one level (5 and 9 actors; four-cycle effects), and the snowball sampler with the outermost zone held fixed (13 actors). In each case the sampler is stationary at the exact maximum likelihood estimate (the equilibrium-expectation convergence statistics are near 0) and the default estimator agrees with it within 0.3 exact standard errors, with standard errors within 40 percent.
+\end{itemize}
+
+\section{The pseudo-likelihood estimate}
+
+The pseudo-likelihood estimate equals the coefficients of Stata's \texttt{logit} of the outcome, without a constant, on the change statistics.
+
+\section{Threads}
+
+The equilibrium-expectation fit with one thread, with several threads and with the default number of threads gives bit-identical estimates, standard errors and diagnostics (Section~\ref{sec:threads}).
+
+\section{MPNet and ALAAMEE results on the karate club}
+
+The observed statistics of the karate club agree with those published with \alaamee{} (density 18, activity 80, contagion 35, partner-activity two-path 566, indirect partner attribute 219 and the triangle statistics 57, 55 and 18). The equilibrium-expectation estimates of \nwalaam{} lie within 0.7 standard errors of the \mpnet{} estimates published with \alaamee{}, and agree with the estimates of the Python program of \alaamee{} (Table~\ref{tab:accuracy}), as both are biased in the same way relative to the exact solution.
+
+\section{What is not validated}
+
+\begin{itemize}[nosep]
+  \item The equilibrium-expectation standard errors on large networks: see Section~\ref{sec:accuracy}.
+  \item Performance on very large networks. The compiled plugin makes fits of networks of a few hundred actors fast; the computing time grows with the number of actors and effects, and the effects \opt{geographichomophily()} and \opt{contagiondist()} visit every actor for every proposal.
+\end{itemize}

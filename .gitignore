@@ -4,3 +4,7 @@ native/*.x86_64
 native/*.arm64
 __pycache__/
 *.pyc
+manual/*.aux
+manual/*.toc
+manual/*.out
+manual/*.log

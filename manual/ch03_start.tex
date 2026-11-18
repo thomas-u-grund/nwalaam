@@ -1,0 +1,31 @@
+\chapter{Getting started}\label{ch:start}
+
+\section{The data}\label{sec:data}
+
+A fit needs three things in Stata: a network in memory, a dataset with one row per actor that holds the outcome (and the covariates), and the command. The outcome is a numeric variable with the values 0 and 1; missing values are allowed (Chapter~\ref{ch:model}). The network is the one named in the command, or the current network.
+
+How the rows of the dataset are matched to the actors of the network depends on the dataset. When it carries the node labels (the variable \texttt{\_nwnode}, as after \texttt{nwload} with the option \texttt{xvars}, or after \texttt{nwwebuse}), the rows are matched to the actors by label, in any row order, and a mismatch (an actor with no row or two rows) is an error. Otherwise the dataset must have one row per actor, in the order of the network. For a two-mode network, see Section~\ref{sec:twomode}.
+
+Covariates are variables of the same dataset. Numeric covariates are used as they are, so \emph{centre them} (a distance matrix is also not centred); categorical effects such as \opt{same()} compare the values of the variable, which may be numeric or string.
+
+\section{A first model}\label{sec:first}
+
+The karate club of Zachary~\cite{zachary1977} has 34 members and 78 friendship ties; the outcome is the faction the member took after the club split (\texttt{faction}, 18 of 34 with the value 1). The edges and attributes are those that come with \alaamee{}. We load the network with \texttt{nwfromedge}, then the attributes:
+\showlog{karate_data}
+The first model has the three effects of the classical example: the number of actors in the faction (\opt{density}, the intercept), the sum of their degrees (\opt{activity}) and the number of ties between two members of the faction (\opt{contagion}):
+\showlog{karate_sa}
+The header says that stochastic approximation was used, that the outcome has 18 ones among 34 actors, and that the procedure was run twice until its convergence statistic was within $0.1$ in absolute value. The table is the usual coefficient table of a Stata estimation command; the standard errors come from the covariance of the simulated statistics (Section~\ref{sec:sa}). Members of the faction tend to be tied to each other (contagion 1.48, $z=3.65$), after allowing for the fact that members with many ties are less likely to belong to it (activity $-0.84$). The intercept is not significant, which is common and not a concern: it only sets the base rate.
+
+Because the algorithm simulates, the numbers depend on the random-number seed. \opt{seed(\#)} sets it; without it the seed is drawn from Stata's generator, so \texttt{set seed} before the command makes a fit reproducible. The fits of this manual give the seed in the command so that every listing can be reproduced.
+
+\section{Looking at the fit}
+
+\texttt{estat mcmcdiag} shows how well the algorithm converged:
+\showlog{karate_diag}
+The column \texttt{t} is the convergence statistic of each coefficient. With stochastic approximation the procedure repeats itself, up to 20 times, until all are below $0.1$; the header of the fit says whether that happened. \texttt{estat gof} compares the model with simulated outcomes (Chapter~\ref{ch:postest}); \texttt{nwalaam simulate} draws outcomes from the fitted model.
+
+\section{Display}\label{sec:display}
+
+The coefficient names are shown in full. At a line size below 100 the confidence intervals are left out so that names of up to 32 characters fit; \opt{ci}, or an explicit \opt{level(\#)}, shows them, and \opt{noci} leaves them out. \opt{ci} and \opt{noci} together are an error. The other display options of Stata's estimation commands (\opt{nopvalues}, \opt{cformat()} and so on) are passed on. The command without arguments replays the last fit, with these options:
+\showlog{glasgow_replay}
+The replay needs the preceding fit to be that of \nwalaam{}; \texttt{estimates store} and \texttt{estimates restore} work as for other estimation commands.

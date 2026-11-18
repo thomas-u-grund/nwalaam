@@ -1,0 +1,15 @@
+. capture noisily nwalaam faction karate, effects(density activity contagion) mple
+the pseudo-likelihood estimate does not exist (perfect prediction or collinear effects).
+convergence not achieved
+
+. nwalaam faction karate, effects(density contagion) mple
+----------------------------------------------------------------------
+Autologistic actor attribute model (maximum pseudo-likelihood)
+Outcome: faction (18 of 34)                    Network: karate
+----------------------------------------------------------------------
+-----------------------------------------------------
+     faction | Coefficient  Std. err.      z    P>|z|
+-------------+---------------------------------------
+     density |  -2.246783   .8659534    -2.59   0.009
+   contagion |   1.455757   .4834143     3.01   0.003
+-----------------------------------------------------

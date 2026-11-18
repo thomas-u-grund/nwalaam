@@ -1,0 +1,70 @@
+\chapter{Effects}\label{ch:effects}
+
+Effects are listed in \opt{effects()} separated by blanks; an effect with an argument is written with the argument in parentheses, for example \opt{effects(density contagion gwactivity(0.5) ego(age\_c))}. Below, $a_i\in\{0,1\}$ is the outcome of actor $i$, $x_{ij}$ the tie from $i$ to $j$ (symmetric in an undirected network), $d_i=\sum_j x_{ij}$ the degree and $n_i=\sum_j x_{ij}a_j$ the number of neighbours with the outcome. Every statistic is a sum over the actors with the outcome ($a_i=1$) unless it is described as a count of ties or triples. The names in the first column are those used in \opt{effects()}; the coefficient table prefixes covariate effects with the effect (for example \texttt{ego\_age\_c}). Appendix~\ref{app:translation} gives the functions of \alaamee{} that they correspond to.
+
+\section{Undirected networks}\label{sec:eff-undirected}
+
+\begin{longtable}{@{}p{0.27\textwidth}p{0.70\textwidth}@{}}
+\toprule Effect & Statistic \\ \midrule \endhead
+\opt{density} & The number of actors with the outcome, $\sum_i a_i$ (the intercept). \\
+\opt{activity} & The sum of the degrees of the actors with the outcome, $\sum_i a_i d_i$. \\
+\opt{twostar}, \opt{threestar} & $\sum_i a_i\binom{d_i}{2}$ and $\sum_i a_i\binom{d_i}{3}$. \\
+\opt{gwactivity}[(\emph{a})] & Geometrically weighted activity, $\sum_i a_i\,e^{-a\,d_i}$ with \emph{a} $>0$; default $\log 2$. \\
+\opt{contagion} & The number of ties between two actors with the outcome, $\sum_{i<j}x_{ij}a_ia_j$. \\
+\opt{alter2star1} & The partner-activity two-path: $\sum_i a_i\sum_j x_{ij}(d_j-1)$. \\
+\opt{alter2star2} & The indirect partner attribute: the number of two-paths between two actors with the outcome. \\
+\opt{partneractivity} & The ties between two actors with the outcome, weighted by the degree sum minus two. \\
+\opt{partnerpartner} & Two times the number of two-paths with the outcome at all three actors. \\
+\opt{triangle1}, \opt{triangle2}, \opt{triangle3} & Triangles weighted by the number of their actors with the outcome (T1), by the number of pairs of them (T2), and only those with all three (T3). \\
+\opt{gwcontagion}[(\emph{a})] & $\sum_i a_i\,e^{-a\,n_i}$; default $\log 2$. \\
+\opt{logcontagion} & $\sum_i a_i\log(n_i+1)$. \\
+\opt{powercontagion}[(\emph{b})] & $\sum_i a_i\,n_i^{1/b}$; default $b=2$. \\
+\opt{ego(var)} & The covariate of the actors with the outcome, $\sum_i a_i v_i$ (centre it). \\
+\opt{alter(var)} & The sum over the actors with the outcome of the covariate of their neighbours. \\
+\opt{same(var)}, \opt{diff(var)} & The number of ties of the actors with the outcome to neighbours of the same, or of a different, category. \\
+\opt{samecontagion(var)} & The ties between two actors with the outcome and the same category. \\
+\opt{samepartneractivity(var)}, \opt{diffpartneractivity(var)} & The two-paths from an actor with the outcome to an actor of the same, or of a different, category. \\
+\opt{sameindirect(var)}, \opt{diffindirect(var)} & The two-paths between two actors with the outcome of the same, or of different, categories. \\
+\opt{alterbinarytwostar1(var)} & $\sum_i a_i$ times the sum of $(d_j-1)$ over the neighbours with the binary attribute 1. \\
+\opt{alterbinarytwostar2(var)} & The two-paths between two actors with the outcome whose middle actor has the binary attribute 1. \\
+\bottomrule
+\end{longtable}
+
+Three more effects use a second source of information and are described in Section~\ref{sec:setting}: \opt{settinghomophily(network)}, \opt{geographichomophily(matname)} and \opt{contagiondist(matname)}.
+
+\section{Directed networks}\label{sec:eff-directed}
+
+In a directed network $x_{ij}$ is the tie from $i$ to $j$. The definitions are those of \alaamee{}.
+
+\begin{longtable}{@{}p{0.27\textwidth}p{0.70\textwidth}@{}}
+\toprule Effect & Statistic \\ \midrule \endhead
+\opt{density} & The number of actors with the outcome. \\
+\opt{sender}, \opt{receiver} & The out-degree and the in-degree of the actors with the outcome. \\
+\opt{reciprocity} & The mutual ties of the actors with the outcome. \\
+\opt{outstar2}, \opt{outstar3}, \opt{instar2}, \opt{instar3} & Out-stars and in-stars at the actors with the outcome. \\
+\opt{mixedstar}, \opt{mixedsource}, \opt{mixedsink} & Mixed two-stars (one in, one out) at the actors with the outcome, and the same with the other end a source or a sink. \\
+\opt{contagion} & The ties, in and out, to actors with the outcome; a mutual tie counts twice. \\
+\opt{contagionrecip} & The mutual ties between two actors with the outcome. \\
+\opt{gwcontagion}[(\emph{a})], \opt{logcontagion}, \opt{powercontagion}[(\emph{b})] & As in undirected networks, with the number of ties (in and out) to actors with the outcome. Their change statistics sum over the out-neighbours with the outcome (counting their in-neighbours with the outcome) and over the in-neighbours with the outcome (counting their out-neighbours with the outcome), as in \alaamee{}. \\
+\opt{transitive1}, \opt{transitive3} & Transitive triples ($a\to b$, $b\to c$, $a\to c$): the number in which the actor with the outcome is the middle actor $b$; those with all three actors with the outcome. \\
+\opt{transitived1}, \opt{transitiveu1} & Transitive triples in which the actor with the outcome is the source $a$, or the sink $c$. \\
+\opt{cyclic1}, \opt{cyclic3} & Cyclic triples ($a\to b\to c\to a$) with an actor with the outcome in them; those with all three actors with the outcome. \\
+\opt{alterinstar2}, \opt{alteroutstar2} & Two-stars between an actor with the outcome and another actor with the outcome through a common target, or source. \\
+\opt{gwsender}[(\emph{a})], \opt{gwreceiver}[(\emph{a})] & Geometrically weighted out- and in-degree. \\
+\opt{ego(var)}, \opt{alter(var)} & The covariate of the actor itself, and of its neighbours (in and out). \\
+\opt{same(var)}, \opt{diff(var)}, \opt{samecontagion(var)} & Ties (in and out) to actors of the same, or of a different, category; ties to actors with the outcome and the same category. \\
+\opt{sendermatch(var)}, \opt{sendermismatch(var)} & Out-ties to actors of the same, or of a different, category. \\
+\opt{receivermatch(var)}, \opt{receivermismatch(var)} & In-ties from actors of the same, or of a different, category. \\
+\opt{reciprocitymatch(var)}, \opt{reciprocitymismatch(var)} & Mutual ties with actors of the same, or of a different, category. \\
+\bottomrule
+\end{longtable}
+
+\opt{settinghomophily(network)} and \opt{geographichomophily(matname)} are available as in undirected networks (Section~\ref{sec:setting}).
+
+\section{Two-mode networks}\label{sec:eff-twomode}
+
+The outcome is defined on the actors of one level of a two-mode network, the other level is the set of events, groups or affiliations the actors are tied to (Section~\ref{sec:twomode}). Contagion effects do not exist because there are no ties within a level. The effects are \opt{density}, \opt{activity}, \opt{twostar}, \opt{threestar}, \opt{gwactivity}, \opt{alter2star1}, \opt{alter2star2}, \opt{fourcycle1}, \opt{fourcycle2}, \opt{ego()}, \opt{alter()}, \opt{samepartneractivity()}, \opt{diffpartneractivity()}, \opt{sameindirect()}, \opt{diffindirect()}, \opt{alterbinarytwostar1()}, \opt{alterbinarytwostar2()}, \opt{settinghomophily()} and \opt{geographichomophily()}. The two that exist only here count four-cycles: \opt{fourcycle1} the four-cycles through the actor and another actor of the same level, whatever the outcome of the other actor, and \opt{fourcycle2} those in which the other actor also has the outcome.
+
+\section{Covariates}\label{sec:covariates}
+
+Covariates are variables of the dataset. Continuous covariates are used as they are: centre them (subtract the mean) so that the intercept keeps its meaning, as in the examples. Categorical effects (\opt{same()}, \opt{diff()}, the partner and indirect effects, the match and mismatch effects) compare the values of the variable; a binary attribute (\opt{alterbinarytwostar1()}) must be 0 or 1. A missing covariate value makes the actor count as 0 in the statistics, as a missing outcome does.

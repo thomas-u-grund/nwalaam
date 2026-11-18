@@ -1,0 +1,14 @@
+. nwalaam faction karate, effects(density activity contagion) seed(20261118)
+----------------------------------------------------------------------
+Autologistic actor attribute model (stochastic approximation)
+Outcome: faction (18 of 34)                    Network: karate
+SA repetitions: 2 (converged: yes)             Proposals per iteration: 1000
+----------------------------------------------------------------------
+-----------------------------------------------------
+     faction | Coefficient  Std. err.      z    P>|z|
+-------------+---------------------------------------
+     density |   .5395213   .9510325     0.57   0.571
+    activity |  -.8397623   .3038426    -2.76   0.006
+   contagion |   1.476303   .4046748     3.65   0.000
+-----------------------------------------------------
+All convergence t-ratios are within .1 in absolute value.

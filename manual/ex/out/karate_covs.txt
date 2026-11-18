@@ -1,0 +1,20 @@
+. quietly summarize age
+
+. generate double age_c = age - r(mean)
+
+. nwalaam faction karate, effects(density contagion ego(age_c) same(gender)) seed(20261118
+> )
+----------------------------------------------------------------------
+Autologistic actor attribute model (stochastic approximation)
+Outcome: faction (18 of 34)                    Network: karate
+SA repetitions: 2 (converged: yes)             Proposals per iteration: 1000
+----------------------------------------------------------------------
+-----------------------------------------------------
+     faction | Coefficient  Std. err.      z    P>|z|
+-------------+---------------------------------------
+     density |  -1.291716   .7003543    -1.84   0.065
+   contagion |   1.174132   .3915565     3.00   0.003
+   ego_age_c |   .0000626    .040548     0.00   0.999
+ same_gender |  -1.357347   .5574965    -2.43   0.015
+-----------------------------------------------------
+All convergence t-ratios are within .1 in absolute value.

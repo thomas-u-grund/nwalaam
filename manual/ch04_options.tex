@@ -1,0 +1,58 @@
+\chapter{Syntax and options}\label{ch:options}
+
+\section{Syntax}
+
+\begin{lstlisting}
+nwalaam outcome [network], effects(string) [options]
+nwalaam [, ci noci level(#) display_options]                (replay after a fit)
+nwalaam simulate [outcome [network]], {generate(stub) | frame(name)} [options]
+estat gof [, nsim(#) extra(list) noextra burnin(#) interval(#) seed(#) plot name(name)]
+estat mcmcdiag [, plot name(name) threshold(#)]
+nwalaam version
+\end{lstlisting}
+\emph{outcome} is a numeric variable of the dataset with the values 0 and 1 (missing allowed). \emph{network} is the network; it is optional, and the default is the current network. It may be undirected or directed, one-mode or two-mode; a valued network is used as binary (a tie where the value is not 0).
+
+\section{Options of the fit}
+
+\begin{longtable}{@{}p{0.31\textwidth}p{0.65\textwidth}@{}}
+\toprule Option & Meaning \\ \midrule \endhead
+\opt{effects(list)} & The effects of the model (required), separated by blanks; those with an argument are written with it in parentheses (Chapter~\ref{ch:effects}). \\
+\opt{method(sa|ee)} & The estimator: \opt{sa}, stochastic approximation (maximum likelihood; the default), or \opt{ee}, the equilibrium-expectation update of \alaamee{} (Chapter~\ref{ch:estimation}). \\
+\opt{mple} & The maximum pseudo-likelihood estimate only: a logit of the outcome on the change statistics. No sampling; standard errors are too small (Section~\ref{sec:mple}). \\
+\opt{saiter(\#)} & Stochastic approximation: iterations of each phase; default 500. \\
+\opt{proposals(\#)} & Stochastic approximation: proposals per iteration; default 1000. \\
+\opt{start(matname)} & A $1\times P$ matrix of starting values; default: Algorithm S, 100 iterations. \\
+\opt{mode(\#)} & Two-mode networks: the level (1 or 2) on which the outcome is defined; default 1. \\
+\opt{zone(varname)} & Snowball sample: the zone (0, 1, \dots, outermost) of every actor; the conditional sampler keeps the outermost zone fixed (Section~\ref{sec:snowball}). \\
+\opt{sampler(zoo)} & The zero-or-one sampler for rare (or very common) outcomes; default: the toggle sampler (Section~\ref{sec:samplers}). \\
+\opt{runs(\#)} & \opt{method(ee)}: the number of independent runs; default 30. \\
+\opt{threads(\#)} & \opt{method(ee)}: the number of threads that execute the independent runs; default: one per core of the computer, at most one per run. The result does not depend on it (Section~\ref{sec:threads}). \\
+\opt{iterations(\#)} & \opt{method(ee)}: iterations of every run; default 50,000. \\
+\opt{thin(\#)} & \opt{method(ee)}: every \#th iteration is stored; default 100. \\
+\opt{burnin(\#)} & \opt{method(ee)}: iterations discarded at the start of every run; default 1,000. \\
+\opt{lrate(\#)} & \opt{method(ee)}: the learning rate of the update; default 0.01. \\
+\opt{seed(\#)} & The seed of the random-number streams (default: drawn from Stata's generator). \\
+\opt{ci}, \opt{noci}, \opt{level(\#)}, \dots & The display of the coefficient table (Section~\ref{sec:display}). \\
+\bottomrule
+\end{longtable}
+
+\section{Defaults and how to change them}
+
+\paragraph{Stochastic approximation.} Each phase of the algorithm has \opt{saiter()} iterations of \opt{proposals()} proposals. Longer phases give a smoother path, not a different estimate, and are the first thing to try when the convergence statistics stay above 0.1 after the 20 repetitions. The starting values are those of the short initial phase (Algorithm S of Snijders~\cite{snijders2002}); \opt{start()} replaces them, which is useful for refitting a slightly changed model from the previous estimate: \texttt{matrix S = e(b)} followed by \opt{start(S)} (the matrix must have one entry for each effect of the new model).
+
+\paragraph{Equilibrium expectation.} The defaults are those of \alaamee{}: 30 independent runs of 50,000 iterations with 1,000 burn-in iterations, storing every 100th, and learning rate 0.01. If the convergence statistics are flagged, more iterations or a smaller learning rate are the remedies; \texttt{estat mcmcdiag} shows which runs fail.
+
+\paragraph{Number of proposals.} Both estimators use the toggle proposal by default; the number of proposals per iteration of the stochastic approximation is \opt{proposals(1000)}. For very large networks it needs to grow with $n$; the sampler is not tuned automatically.
+
+\section{Error messages}
+
+\begin{longtable}{@{}p{0.14\textwidth}p{0.82\textwidth}@{}}
+\toprule Code & Cause \\ \midrule \endhead
+198 & An option or effect is not recognized; the actors of the network do not each have exactly one row in the dataset; an effect that needs a covariate, a setting network or a distance matrix is given none; \opt{ci} and \opt{noci} together; \opt{zone()} does not hold the zones $0,1,\dots$ with every zone occurring. \\
+430 & The estimate cannot be computed: under \opt{mple}, the pseudo-likelihood estimate does not exist (perfect prediction or collinear effects; the karate club with the three effects above is an example, Section~\ref{sec:mple}); otherwise, the simulated statistics are collinear at the estimate, so the covariance matrix cannot be computed. \\
+450 & The outcome is not 0 or 1 (or missing). \\
+498 & \texttt{estat mcmcdiag} after \opt{mple}: there is nothing to diagnose. \\
+601, 3495 & The plugin file is missing (601), or it is older than the package or cannot be loaded (3495). \\
+2000 & The outcome has no variation among the actors with a non-missing value. \\
+\bottomrule
+\end{longtable}

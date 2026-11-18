@@ -1,0 +1,31 @@
+. nwwebuse lazega, nwclear
+
+. nwset
+(3 networks)
+--------------------
+      lazega_adv
+      lazega_cow
+      lazega_fr
+
+. generate byte corporate = (practicenum == 2)
+
+. quietly summarize age
+
+. generate double age_c = age - r(mean)
+
+. nwalaam corporate lazega_fr, effects(density contagion ego(age_c) settinghomophily(lazeg
+> a_cow)) seed(20261118)
+----------------------------------------------------------------------
+Autologistic actor attribute model (stochastic approximation)
+Outcome: corporate (41 of 71)                  Network: lazega_fr
+SA repetitions: 2 (converged: yes)             Proposals per iteration: 1000
+----------------------------------------------------------------------
+--------------------------------------------------------------------
+                  corporate | Coefficient  Std. err.      z    P>|z|
+----------------------------+---------------------------------------
+                    density |  -2.460534   .4613384    -5.33   0.000
+                  contagion |   .1292175   .0920167     1.40   0.160
+                  ego_age_c |  -.0243642   .0258121    -0.94   0.345
+settinghomophily_lazega_cow |   .1082235   .0651481     1.66   0.097
+--------------------------------------------------------------------
+All convergence t-ratios are within .1 in absolute value.

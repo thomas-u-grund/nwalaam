@@ -1,5 +1,5 @@
 {smcl}
-{* *! version 1.1.0  18nov2026 author: Thomas Grund}{...}
+{* *! version 1.1.1  18nov2026 author: Thomas Grund}{...}
 {marker topic}
 {title:Title}
 
@@ -92,7 +92,7 @@ and the number of the run, and its own memory, so the estimates, the standard er
 and the default. Stochastic approximation, {cmd:mple}, {cmd:simulate} and {cmd:estat gof} follow one chain each and use one thread.
 
 {pstd}
-{bf:Which estimator.} Both estimators give standard errors that agree with the exact ones. They differ in the estimates: where the
+{bf:Which estimator.} Stochastic approximation gives standard errors that agree with the exact ones. The equilibrium-expectation standard errors can be too small on larger networks (check them against a parametric bootstrap before relying on them). The two estimators also differ in the estimates: where the
 exact maximum likelihood estimate can be computed by enumerating all outcome vectors, stochastic approximation reproduces it,
 while the equilibrium-expectation update stops at slightly different values. On the karate club (34 actors; Density, Activity and Contagion
 with the faction as outcome) the exact estimates are 0.535, -0.832 and 1.461; stochastic approximation gives 0.52, -0.83, 1.46 and the
@@ -265,4 +265,4 @@ scalars {cmd:e(N)}, {cmd:e(n_ones)}, {cmd:e(nodes)}, {cmd:e(runs)}, {cmd:e(runs_
 {p 4 8 2}Stivala, A. 2023. Overcoming near-degeneracy in the autologistic actor attribute model. arXiv:2309.07338.{p_end}
 
 {hline}
-{pstd}{it:nwalaam version 1.1.0, 18 November 2026}{p_end}{* nwversion}
+{pstd}{it:nwalaam version 1.1.1, 18 November 2026}{p_end}{* nwversion}

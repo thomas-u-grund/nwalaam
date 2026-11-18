@@ -1,0 +1,16 @@
+. nwalaam smoker1 glasgow1, effects(density contagion sender receiver) method(ee) runs(30)
+>  seed(20261118)
+----------------------------------------------------------------------
+Autologistic actor attribute model (equilibrium expectation)
+Outcome: smoker1 (12 of 50)                    Network: glasgow1
+EE runs used: 30 of 30                         Acceptance rate: 0.369
+----------------------------------------------------------------------
+-----------------------------------------------------
+     smoker1 | Coefficient  Std. err.      z    P>|z|
+-------------+---------------------------------------
+     density |  -1.184501   .8641811    -1.37   0.170
+   contagion |    .815378   .3119426     2.61   0.009
+      sender |  -.4980728   .4320498    -1.15   0.249
+    receiver |  -.0167183   .3159297    -0.05   0.958
+-----------------------------------------------------
+All convergence t-ratios are within .3 in absolute value.

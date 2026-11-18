@@ -1,0 +1,15 @@
+. estat mcmcdiag
+
+Stochastic-approximation diagnostics: 2 repetition(s) of the three phases, 1,000 proposals
+>  per iteration, 2,000 iterations in the final phase
+------------------------------------------------------
+   Parameter |  Estimate         t   |t| max     AC dz
+-------------+----------------------------------------
+     density |    0.5395   -0.0125    0.0125     0.944
+    activity |   -0.8398   -0.0131    0.0131     0.961
+   contagion |    1.4763   -0.0079    0.0079     0.959
+------------------------------------------------------
+t is the convergence t-ratio, mean(dz)/sd(dz) over the iterations of the final phase
+after a burn-in of one tenth, where dz is the difference between the simulated and the
+observed statistics; |t| below 0.1 counts as converged (the estimation is repeated, up
+to 20 times, until it is reached). AC is the lag-1 autocorrelation of dz.

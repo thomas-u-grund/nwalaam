@@ -1,0 +1,52 @@
+. estat mcmcdiag
+
+Stochastic-approximation diagnostics: 2 repetition(s) of the three phases, 1,000 proposals
+>  per iteration, 2,000 iterations in the final phase
+------------------------------------------------------
+   Parameter |  Estimate         t   |t| max     AC dz
+-------------+----------------------------------------
+     density |   -0.7100    0.0752    0.0752     0.783
+   contagion |    0.3051    0.0722    0.0722     0.750
+      sender |   -0.2016    0.0737    0.0737     0.787
+    receiver |   -0.0185    0.0779    0.0779     0.790
+   ego_age_c |   -0.0327   -0.0177    0.0177     0.012
+------------------------------------------------------
+t is the convergence t-ratio, mean(dz)/sd(dz) over the iterations of the final phase
+after a burn-in of one tenth, where dz is the difference between the simulated and the
+observed statistics; |t| below 0.1 counts as converged (the estimation is repeated, up
+to 20 times, until it is reached). AC is the lag-1 autocorrelation of dz.
+
+. estat gof, nsim(1000) seed(7)
+
+Goodness of fit: 1,000 simulated outcome vectors from the fitted model (burn-in 10,000, in
+> terval 1,000)
+------------------------------------------------------------
+     Statistic |   Observed  Sim. mean    Sim. SD    t-ratio
+---------------+--------------------------------------------
+       density |     41.000     41.258     19.618      0.013
+     contagion |    261.000    263.833    177.917      0.016
+        sender |    336.000    338.419    177.721      0.014
+      receiver |    349.000    351.844    170.858      0.017
+     ego_age_c |    -34.648    -33.978     34.984      0.019
+---------------+--------------------------------------------
+not in the model: |
+   reciprocity |     96.000     88.868     46.497     -0.153
+      outstar2 |   1621.000   1653.065    939.990      0.034
+       instar2 |   1554.000   1566.206    772.782      0.016
+     mixedstar |   2926.000   2912.885   1545.061     -0.008
+   mixedsource |   2764.000   2792.771   1471.414      0.020
+     mixedsink |   2943.000   2904.261   1407.355     -0.028
+contagionrecip |     41.000     34.891     23.655     -0.258
+   transitive1 |    567.000    542.453    287.136     -0.085
+   transitive3 |    389.000    366.605    277.165     -0.081
+  transitived1 |    523.000    525.288    295.551      0.008
+  transitiveu1 |    575.000    563.138    274.814     -0.043
+       cyclic1 |    435.000    403.924    214.244     -0.145
+       cyclic3 |    104.000     91.872     69.537     -0.174
+  alterinstar2 |   1132.000   1296.300    871.857      0.188
+ alteroutstar2 |    959.000   1090.306    767.309      0.171
+------------------------------------------------------------
+Mahalanobis distance of the observed statistics from the simulated ones:     8.299
+t-ratio = (simulated mean - observed) / simulated SD; * marks |t| > 0.3 (t-ratios of the
+statistics in the model should be near 0 after a converged fit; for the other
+statistics, values within about 0.3 indicate a good fit).

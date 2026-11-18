@@ -1,0 +1,35 @@
+. nwwebuse davis, nwclear
+
+. nwset
+(1 networks)
+--------------------
+      davis
+
+. generate byte mrs = (title == "Mrs") if _nwmode == "1"
+(14 missing values generated)
+
+. tabulate mrs
+
+        mrs |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |         11       61.11       61.11
+          1 |          7       38.89      100.00
+------------+-----------------------------------
+      Total |         18      100.00
+
+. nwalaam mrs davis, effects(density activity fourcycle1 fourcycle2) mode(1) seed(20261118
+> )
+----------------------------------------------------------------------
+Autologistic actor attribute model (stochastic approximation)
+Outcome: mrs (7 of 18)                         Network: davis
+SA repetitions: 1 (converged: yes)             Proposals per iteration: 1000
+----------------------------------------------------------------------
+-----------------------------------------------------
+         mrs | Coefficient  Std. err.      z    P>|z|
+-------------+---------------------------------------
+     density |  -3.651917   2.465349    -1.48   0.139
+    activity |   2.085032   1.288053     1.62   0.106
+  fourcycle1 |  -.1630159   .1054278    -1.55   0.122
+  fourcycle2 |  -.0872748   .1225311    -0.71   0.476
+-----------------------------------------------------
+All convergence t-ratios are within .1 in absolute value.

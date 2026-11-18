@@ -1,0 +1,33 @@
+\chapter{The model}\label{ch:model}
+
+\section{The autologistic actor attribute model}
+
+Let $A=(A_1,\dots,A_n)$ be the binary outcome of the $n$ actors of a network with a fixed set of ties $x$. The ALAAM is the exponential-family distribution
+\begin{equation}
+  \Pr(A=a\mid x,\theta)=\frac{\exp\bigl(\sum_{k=1}^{P}\theta_k\,z_k(a,x)\bigr)}{\kappa(\theta)},
+  \label{eq:alaam}
+\end{equation}
+where $z_k(a,x)$ are statistics that count configurations of the outcome on the network and $\kappa(\theta)$ is the sum of the numerator over all $2^n$ outcome vectors. Examples of statistics: the number of actors with the outcome ($z_{\text{density}}=\sum_i a_i$), the sum of the degrees of the actors with the outcome (activity), and the number of ties between two actors with the outcome (contagion, $\sum_{i<j} x_{ij}a_ia_j$ in an undirected network). Chapter~\ref{ch:effects} defines every statistic.
+
+The conditional distribution of one actor's outcome given the outcomes of all others is a logistic regression: the log odds of $A_i=1$ is $\sum_k\theta_k\,\delta_k(i)$, where $\delta_k(i)=z_k(a^{i\to1},x)-z_k(a^{i\to0},x)$ is the \emph{change statistic}, the change of the statistic when the outcome of actor $i$ changes from 0 to 1 with the outcomes of the others held fixed. Change statistics are what the computer evaluates; for contagion $\delta(i)$ is the number of ties of $i$ to actors with the outcome. The model is the autologistic model on a graph (Besag's auto-models) in the version for social networks of Robins, Pattison and Elliott~\cite{robins2001} and Daraganova and Robins~\cite{daraganova2013}.
+
+\section{Why estimation needs simulation}
+
+The constant $\kappa(\theta)$ has $2^n$ terms. With $n=34$ (the karate club of Section~\ref{sec:karate}) that is $1.7\times10^{10}$ terms, which can be enumerated once by a dedicated program but not repeated for every trial value of $\theta$; with $n=71$ it cannot be enumerated at all. The likelihood equation, however, requires only that the expected statistics under the model equal the observed ones,
+\begin{equation}
+  E_\theta\bigl[z(A)\bigr]=z(a_{\text{obs}}),
+  \label{eq:moment}
+\end{equation}
+and expectations can be estimated by simulating outcome vectors from the model with a Metropolis sampler that proposes to change the outcome of one actor at a time. The two estimators of \nwalaam{} solve (\ref{eq:moment}) by simulation in two different ways (Chapter~\ref{ch:estimation}). Equation (\ref{eq:moment}) is also the reason for the convergence statistics that \nwalaam{} reports: at the solution the simulated statistics equal the observed ones on average, so the mean of the difference between them, divided by its standard deviation, is near zero.
+
+\section{Observed data and the fixed network}
+
+The network is taken as given. This has two consequences that matter for interpretation.
+
+\paragraph{No causal reading.} A cross-sectional ALAAM describes how the outcome is distributed over the network. A positive contagion coefficient says that actors with the outcome are tied to each other more often than the other effects in the model explain. It does not identify social influence: the same pattern arises when actors choose friends who are like them (selection), when they share a setting (confounding), and when the outcomes affect each other simultaneously (the reflection problem of Manski~\cite{manski1993}). Effects of the network and of the covariates are associations. To separate influence from selection, use a longitudinal model such as \texttt{nwsaom}.
+
+\paragraph{Missing outcomes.} An actor with a missing outcome is never changed by the sampler and counts as 0 in every statistic. The estimates are conditional on that treatment, which is the one of \alaamee{}. Missing ties are not treated specially: a network with missing ties is analysed as it is stored.
+
+\section{Near-degeneracy}
+
+Contagion models on small networks often put almost all probability on the two extreme outcome vectors (all actors with the outcome, none), with a gap in between: the distribution of the number of actors with the outcome has two modes. The karate club is an example, and Section~\ref{sec:karate} shows what that does to the goodness-of-fit table. Geometrically weighted statistics (\opt{gwactivity}, \opt{gwcontagion}, \opt{gwsender}, \opt{gwreceiver}) are the remedy proposed by Stivala~\cite{stivala2023} for the near-degeneracy of the activity and star statistics on larger networks; read their coefficients with care, because the decay parameter changes their meaning.

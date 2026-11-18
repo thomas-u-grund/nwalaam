@@ -1,0 +1,35 @@
+\chapter{Limits and technical notes}\label{ch:limits}
+
+\section{What \texorpdfstring{\nwalaam}{nwalaam} does not do}
+
+\begin{itemize}[nosep]
+  \item \textbf{Continuous and categorical outcomes.} The outcome is binary.
+  \item \textbf{Valued ties.} A valued network is used as binary: a tie where the value is not 0.
+  \item \textbf{Several waves.} An ALAAM describes one observation of the network and the outcome. For networks and outcomes observed over time, use a stochastic actor-oriented model (\texttt{nwsaom}).
+  \item \textbf{Several outcomes or several networks at once.} One outcome and one main network per model; a second network enters through \opt{settinghomophily()}.
+  \item \textbf{Causal claims.} The model describes the distribution of the outcome over the network; it does not separate influence from selection (Chapter~\ref{ch:model}).
+  \item \textbf{Parametric bootstrap, model selection.} There is no command for a parametric bootstrap and no information criterion; \texttt{nwalaam simulate} draws the outcomes, so a bootstrap can be programmed around it.
+  \item \textbf{Missing network ties.} Missing ties are not modelled.
+\end{itemize}
+
+\section{Differences from ALAAMEE and MPNet that matter}
+
+\begin{itemize}[nosep]
+  \item \textbf{Default estimator.} Stochastic approximation (like \mpnet{}), not equilibrium expectation (Chapter~\ref{ch:estimation}).
+  \item \textbf{Zero-or-one sampler.} The acceptance probability uses the exact numbers of actors with each value, including the cases with all or none of the actors having the outcome.
+  \item \textbf{Goodness-of-fit start.} \texttt{estat gof} starts its simulation at the observed outcomes.
+  \item \textbf{Reproducibility.} With a seed, a fit is reproducible exactly, whatever the number of threads.
+  \item \textbf{Effects of \mpnet{} that \alaamee{} does not have} are not implemented.
+\end{itemize}
+
+\section{The compiled plugin and the Mata library}
+
+The sampler and the change statistics are in a C plugin, \texttt{alaam\_sim}, that ships with the package for macOS, Linux and Windows; the optimization, the covariance matrices, the diagnostics and the tables are Mata and Stata code. A plugin depends on the operating system and the processor, not on the version or flavour of Stata. If the plugin of your platform is missing or does not work, \texttt{nwinstall, buildplugin(nwalaam)} compiles it on your computer; a build of the Mata library with your own Stata is \texttt{nwinstall, buildmata(nwalaam)}. The Mata library is built with Stata 17; a library built by a newer Stata is ignored by an older one.
+
+\section{Computing time}
+
+The time of a stochastic-approximation fit is proportional to the number of iterations, the proposals per iteration and the cost of one change statistic, which grows with the degree of the actors and the number of effects. For networks of a few hundred actors a fit takes seconds to a minute. An equilibrium-expectation fit with the default 30 runs of 50,000 iterations does the same amount of work as 30 chains of that length; with the default number of threads the runs are spread over the cores of the computer (Section~\ref{sec:threads}; the Lazega example, 30 runs, took 72 seconds with one thread and 13 with eight on the computer used for the examples, which was shared with other jobs).
+
+\section{Reproducibility and versions}
+
+State the exact version, \texttt{e(version)} or \texttt{nwalaam version}, the estimator and the seed when you report an analysis. A change of the version may change the numbers of a fit with the same seed when the sampler or the algorithm changed; the documentation of the version lists such changes. The seeds make a fit with the same version and the same data exactly reproducible on the same platform.

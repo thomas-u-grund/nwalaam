@@ -1,0 +1,50 @@
+. timer clear
+
+. timer on 1
+
+. nwalaam corporate lazega_fr, effects(density contagion) method(ee) runs(30) seed(1) thre
+> ads(1)
+----------------------------------------------------------------------
+Autologistic actor attribute model (equilibrium expectation)
+Outcome: corporate (41 of 71)                  Network: lazega_fr
+EE runs used: 30 of 30                         Acceptance rate: 0.524
+----------------------------------------------------------------------
+-----------------------------------------------------
+   corporate | Coefficient  Std. err.      z    P>|z|
+-------------+---------------------------------------
+     density |  -2.457351   .4969116    -4.95   0.000
+   contagion |   .2770664   .0538798     5.14   0.000
+-----------------------------------------------------
+All convergence t-ratios are within .3 in absolute value.
+
+. timer off 1
+
+. matrix B1 = e(b)
+
+. timer on 2
+
+. nwalaam corporate lazega_fr, effects(density contagion) method(ee) runs(30) seed(1) thre
+> ads(8)
+----------------------------------------------------------------------
+Autologistic actor attribute model (equilibrium expectation)
+Outcome: corporate (41 of 71)                  Network: lazega_fr
+EE runs used: 30 of 30                         Acceptance rate: 0.524
+----------------------------------------------------------------------
+-----------------------------------------------------
+   corporate | Coefficient  Std. err.      z    P>|z|
+-------------+---------------------------------------
+     density |  -2.457351   .4969116    -4.95   0.000
+   contagion |   .2770664   .0538798     5.14   0.000
+-----------------------------------------------------
+All convergence t-ratios are within .3 in absolute value.
+
+. timer off 2
+
+. matrix B8 = e(b)
+
+. display "largest difference between the two coefficient vectors: " mreldif(B1, B8)
+largest difference between the two coefficient vectors: 0
+
+. timer list
+   1:     72.51 /        1 =      72.5070
+   2:     12.97 /        1 =      12.9680

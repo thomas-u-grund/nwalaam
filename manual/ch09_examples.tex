@@ -1,0 +1,38 @@
+\chapter{Worked examples}\label{ch:examples}
+
+The do-files of this chapter are in the folder \texttt{manual/ex} of the package repository; running them reproduces the listings. The Glasgow, Lazega and Davis data are loaded with \texttt{nwwebuse}.
+
+\section{The karate club}\label{sec:karate}
+
+Sections~\ref{sec:first}, \ref{sec:ee} and~\ref{sec:accuracy} used the karate club to introduce the command, the two estimators and the exact comparison, and Section~\ref{sec:gof} showed the goodness-of-fit table that two modes produce. A model with covariates for the club members adds age (centred) and gender (the effect \opt{same(gender)} counts the ties of members of the faction to members of the same gender):
+\showlog{karate_covs}
+Once the same-gender ties are in the model the contagion coefficient drops from 1.48 to 1.17, and members of the faction tend to have friends of the other gender; age has no association with the faction. The coefficients are conditional associations with the network held fixed, not effects (Chapter~\ref{ch:model}).
+
+\section{Smoking in the Glasgow friendship network}\label{sec:ex-glasgow}
+
+The Teenage Friends and Lifestyle Study followed pupils in Glasgow through secondary school~\cite{michell1996}; the example uses the first wave of 50 pupils and their directed friendship nominations, with the outcome that a pupil smokes occasionally or regularly (12 of 50). The question: who smokes, given the network? We load the data with \texttt{nwwebuse}:
+\showlog{glasgow_data}
+The pseudo-likelihood estimate with density and contagion is the logit of smoking on the number of ties to smokers; it is fast but its standard errors are too small:
+\showlog{glasgow_mple}
+The default estimator adds the out-degree and the in-degree of the smokers (\opt{sender}, \opt{receiver}); the contagion coefficient is positive and clearly different from zero (0.74, $z=2.62$):
+\showlog{glasgow_sa}
+Adding two covariates, the pupil's alcohol use and sport (both centred; the command does not centre them):
+\showlog{glasgow_cov}
+Smoking goes with alcohol use ($1.86$, $z=2.66$), and once alcohol use is in the model the contagion coefficient is smaller (0.42) and its $z$-value falls to 1.20: the association of smoking with the smoking of friends is partly an association with the drinking of the pupil, in this model. Goodness of fit, as in Section~\ref{sec:gof}:
+\showlog{glasgow_gof}
+The equilibrium-expectation estimate of the four-effect model (the method of \alaamee{}) is close to the stochastic-approximation estimate, as the two methods should be on a network of this size:
+\showlog{glasgow_ee}
+
+\section{Practice area in a law firm}\label{sec:ex-lazega}
+
+The 71 lawyers of Lazega's corporate law firm~\cite{lazega2001} are tied by friendship (directed), advice and co-working ties; the outcome is whether a lawyer works in corporate (rather than litigation) law, 41 of 71. We use the friendship network:
+\showlog{lazega_data}
+The model has the directed effects density, contagion, sender and receiver and the centred age of the lawyer:
+\showlog{lazega_sa}
+Friends tend to be in the same area of practice (contagion 0.31, $z=6.8$) and lawyers with many outgoing friendships are less likely to be in corporate law. The diagnostics and the goodness of fit are in Section~\ref{sec:gof}. A smaller model with the equilibrium-expectation estimator of \alaamee{} (30 runs, the defaults) gives:
+\showlog{lazega_ee}
+Simulation from the fit, with 200 draws, is shown in Section~\ref{sec:simulate}.
+
+\section{Further examples in the manual}
+
+The two-mode example is in Section~\ref{sec:twomode}, the setting network and the distance matrix in Section~\ref{sec:setting}, the zero-or-one sampler and the snowball zones in Sections~\ref{sec:samplers} and~\ref{sec:snowball}, and the comparison of the threads in Section~\ref{sec:threads}.

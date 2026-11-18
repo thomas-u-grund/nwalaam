@@ -1,0 +1,33 @@
+\chapter{Special data and samplers}\label{ch:special}
+
+\section{Two-mode networks}\label{sec:twomode}
+
+A two-mode network ties actors of one level (here the \emph{women} of the example) to actors of another level (the \emph{events} they attended). The outcome is defined on the actors of one level, chosen with \opt{mode(\#)}; the other level is the context. The outcome and the covariates are variables of the current dataset: either one row for each actor of the outcome level, or, with node labels in the dataset, matched by label, or one row for every node of both levels (the rows of the other level are ignored for the outcome). Covariates of the other level (for \opt{alter()} and the binary two-stars) need rows for all nodes.
+
+The example uses the southern women of Davis, Gardner and Gardner~\cite{davis1941}: 18 women, 14 social events, and the outcome is whether a woman is married (title ``Mrs'', 7 of 18). The effects are \opt{density}, the sum of the event counts of the married women (\opt{activity}), the four-cycles through a woman and another woman (\opt{fourcycle1}) and those in which the other woman is also married (\opt{fourcycle2}):
+\showlog{special_twomode}
+Eighteen actors are few: the standard errors are large and none of the effects is distinguishable from zero. The listing is shown for the syntax and the output, not for a finding. Only actors of the outcome level are changed by the sampler.
+
+\section{A setting network and a distance matrix}\label{sec:setting}
+
+Two effects use a second source of information about the actors.
+
+\paragraph{Setting network.} \opt{settinghomophily(network)} counts the ties in another network of the same actors (a one-mode network; its direction is ignored) between two actors with the outcome: whether actors with the outcome are in the same setting (a school class, a workplace) more often than the main network and the other effects explain. The main network is not required to have the tie. In the example the main network is the friendship network of the lawyers of Lazega's firm~\cite{lazega2001} and the setting network is their co-working network:
+\showlog{special_setting}
+
+\paragraph{Distance matrix.} \opt{geographichomophily(matname)} is the sum over all other actors with the outcome of their distance to the actor, and \opt{contagiondist(matname)} the sum over the neighbours with the outcome of their distance to the actor (undirected networks). \emph{matname} is a Stata matrix (or, for large networks, a Mata matrix) with one row and one column for each actor of the network, in the order of the network; a distance matrix is not changed or centred. The statistic visits every actor for every proposal and is slow on large networks. The example uses the absolute difference of the lawyers' ages as the distance (a stand-in for a geographic distance):
+\showlog{special_distance}
+
+\section{Samplers}\label{sec:samplers}
+
+\paragraph{The toggle sampler (default).} A proposal changes the outcome of a random actor. With a rare (or very common) outcome most proposals are wasted: they propose to give the outcome to an actor who is unlikely to have it, or the reverse.
+
+\paragraph{The zero-or-one sampler.} \opt{sampler(zoo)} proposes a move to 1 or a move to 0 with equal probability and then draws a random actor that currently has the other value, correcting the acceptance probability for the numbers of actors with each value. The correction is derived exactly, including the cases with all or no actor having the outcome, and checked against the exact maximum likelihood on a small network (Chapter~\ref{ch:validation}). It is also correct, only unnecessary, for outcomes that are not rare:
+\showlog{special_zoo}
+The estimates are close to those of the equilibrium-expectation fit of the same model in Section~\ref{sec:ex-lazega} (density $-2.46$, contagion $0.28$), up to the difference between the estimators; the benefit of the sampler is for rare outcomes.
+
+\section{Snowball samples}\label{sec:snowball}
+
+When the network was collected by snowball sampling, the ties of the actors in the outermost wave are only partly observed. Stivala and co-authors~\cite{stivala2020} describe the \emph{conditional} estimation for such data: the outcomes of the actors of the outermost zone are held fixed at their observed values while the others change in the simulation. \opt{zone(varname)} declares it: the variable holds the zone of each actor, $0$ (the seeds), $1,\dots$, up to the outermost zone, with every zone occurring. It is not available for two-mode networks and not together with \opt{sampler(zoo)}. The listing below only shows the syntax: the zones are made up from the row numbers, since the Lazega data are not a snowball sample.
+\showlog{special_zone}
+In a simulation with \texttt{nwalaam simulate} and \opt{zone()} the outermost zone keeps its observed outcomes.

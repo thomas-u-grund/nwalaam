@@ -1,0 +1,26 @@
+. quietly summarize alcohol1
+
+. generate double alc_c = alcohol1 - r(mean)
+
+. quietly summarize sport1
+
+. generate double sport_c = sport1 - r(mean)
+
+. nwalaam smoker1 glasgow1, effects(density contagion sender receiver ego(alc_c) ego(sport
+> _c)) seed(20261118)
+----------------------------------------------------------------------
+Autologistic actor attribute model (stochastic approximation)
+Outcome: smoker1 (12 of 50)                    Network: glasgow1
+SA repetitions: 1 (converged: yes)             Proposals per iteration: 1000
+----------------------------------------------------------------------
+-----------------------------------------------------
+     smoker1 | Coefficient  Std. err.      z    P>|z|
+-------------+---------------------------------------
+     density |  -1.202652   1.062661    -1.13   0.258
+   contagion |   .4173669   .3472694     1.20   0.229
+      sender |  -.3880205   .5812799    -0.67   0.504
+    receiver |  -.2609823   .3967369    -0.66   0.511
+   ego_alc_c |   1.859464   .6992444     2.66   0.008
+ ego_sport_c |   .2146388   .9961019     0.22   0.829
+-----------------------------------------------------
+All convergence t-ratios are within .1 in absolute value.

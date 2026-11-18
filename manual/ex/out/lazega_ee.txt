@@ -1,0 +1,14 @@
+. nwalaam corporate lazega_fr, effects(density contagion) method(ee) runs(30) seed(2026111
+> 8)
+----------------------------------------------------------------------
+Autologistic actor attribute model (equilibrium expectation)
+Outcome: corporate (41 of 71)                  Network: lazega_fr
+EE runs used: 30 of 30                         Acceptance rate: 0.525
+----------------------------------------------------------------------
+-----------------------------------------------------
+   corporate | Coefficient  Std. err.      z    P>|z|
+-------------+---------------------------------------
+     density |  -2.455735   .4706568    -5.22   0.000
+   contagion |   .2768738   .0519296     5.33   0.000
+-----------------------------------------------------
+All convergence t-ratios are within .3 in absolute value.

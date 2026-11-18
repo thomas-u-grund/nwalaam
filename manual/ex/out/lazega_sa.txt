@@ -1,0 +1,17 @@
+. nwalaam corporate lazega_fr, effects(density contagion sender receiver ego(age_c)) seed(
+> 20261118)
+----------------------------------------------------------------------
+Autologistic actor attribute model (stochastic approximation)
+Outcome: corporate (41 of 71)                  Network: lazega_fr
+SA repetitions: 2 (converged: yes)             Proposals per iteration: 1000
+----------------------------------------------------------------------
+-----------------------------------------------------
+   corporate | Coefficient  Std. err.      z    P>|z|
+-------------+---------------------------------------
+     density |  -.7099892    .827075    -0.86   0.391
+   contagion |   .3051304   .0447994     6.81   0.000
+      sender |  -.2015591   .0779018    -2.59   0.010
+    receiver |  -.0185176   .0900693    -0.21   0.837
+   ego_age_c |  -.0327189   .0282075    -1.16   0.246
+-----------------------------------------------------
+All convergence t-ratios are within .1 in absolute value.

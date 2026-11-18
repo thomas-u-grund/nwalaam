@@ -142,6 +142,7 @@ def tex(t, v, d, nm, fn):
     day, mo, lm, yr = dates(d)
     t = re.sub(r'(\\newcommand\{\\pkgversion\}\{)[^}]*(\})', r'\g<1>%s\2' % v, t)
     t = re.sub(r'(\\newcommand\{\\pkgdate\}\{)[^}]*(\})', r'\g<1>%d %s %d\2' % (day, lm, yr), t)
+    t = re.sub(r'(thomas-u-grund/%s/)v\d+\.\d+\.\d+(/)' % nm, r'\g<1>v%s\2' % v, t)
     return t
 
 

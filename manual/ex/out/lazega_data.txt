@@ -1,0 +1,23 @@
+. nwwebuse lazega, nwclear
+
+. nwset
+(3 networks)
+--------------------
+      lazega_adv
+      lazega_cow
+      lazega_fr
+
+. generate byte corporate = (practicenum == 2)
+
+. quietly summarize age
+
+. generate double age_c = age - r(mean)
+
+. tabulate corporate
+
+  corporate |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |         30       42.25       42.25
+          1 |         41       57.75      100.00
+------------+-----------------------------------
+      Total |         71      100.00

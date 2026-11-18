@@ -3,6 +3,16 @@
 All notable changes to nwalaam are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project uses [Semantic Versioning](https://semver.org/).
 
+## [1.1.1] - 2026-11-18
+
+### Fixed
+- Two-mode networks whose nodes are not stored with the first level first (for example the Davis southern women network, whose nodes are in label order): the actors of the outcome level are now found from the modes of the nodes. Before, the first nodes of the network were taken as the outcome level, so the fit used the wrong actors (the header showed too few actors) and could stop with r(430). Networks stored with the first level first are unchanged.
+
+### Changed
+- Help file: the equilibrium-expectation standard errors can be too small on larger networks (stochastic approximation's agree with the exact ones); check them against a parametric bootstrap. No change to any command or result.
+
+Tested on macOS with Stata 17 BE (the full test suite). Windows and Linux: not tested for this version; the package has no native or Mata change since 1.1.0.
+
 ## [1.1.0] - 2026-11-18
 
 ### Added
