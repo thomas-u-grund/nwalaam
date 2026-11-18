@@ -3,6 +3,10 @@
 All notable changes to nwalaam are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project uses [Semantic Versioning](https://semver.org/).
 
+## [1.0.0] - 2026-11-18
+
+First public release. Autologistic actor attribute models for a binary actor outcome on a fixed network (undirected, directed and two-mode): the effects of ALAAMEE (Stivala), stochastic approximation as the default estimator (checked against the exact maximum likelihood on the Karate Club and on a 16-actor network), the equilibrium-expectation update of ALAAMEE as `method(ee)`, maximum pseudolikelihood (`mple`), `simulate`, `estat gof`, `estat mcmcdiag`, the zero-or-one and snowball samplers, a native plugin for macOS, Linux and Windows. The earlier entries below record the development steps.
+
 ## [0.3.1] - 2026-11-18
 
 ### Fixed
