@@ -1,4 +1,4 @@
-*! version 1.1.0  18nov2026 _nwalaam_prep
+*! version 1.1.1  18nov2026 _nwalaam_prep
 * Copyright (C) 2026 Thomas U. Grund. Part of nwalaam; GNU GPL-3 (see LICENSE).
 * reads the data of a fit into Mata objects (__nwalaam_*): outcome, covariates, the effects (and extra effects appended, for goodness of fit)
 capture program drop _nwalaam_prep
@@ -79,8 +79,7 @@ program _nwalaam_prep
 	mata: __nwalaam_adj = *(`netobj'->get_matrix())
 	if `__two' {
 		mata: __nwalaam_adj = (editmissing(__nwalaam_adj, 0) :!= 0); __nwalaam_adj = (__nwalaam_adj :| __nwalaam_adj'); __nwalaam_adj = __nwalaam_adj :+ 0
-		mata: __nwalaam_n1 = `netobj'->get_nodes_mode1(); __nwalaam_n2 = `netobj'->get_nodes_mode2()
-		mata: __nwalaam_mo = (J(__nwalaam_n1, 1, `mode' == 1) \ J(__nwalaam_n2, 1, `mode' == 2))
+		mata: __nwalaam_mo = (strtoreal(`netobj'->get_modes()') :== `mode')
 		mata: st_local("__nm", strofreal(sum(__nwalaam_mo)))
 	}
 	else {
