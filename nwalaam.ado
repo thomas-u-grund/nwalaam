@@ -37,6 +37,7 @@ program nwalaam, eclass
 	}
 	if "`method'" == "" local method "sa"
 	if "`mple'" != "" local method "mple"
+	if "`method'" == "mple" local mple "mple"
 	if !inlist("`method'", "ee", "sa", "mple") {
 		di as error "method() must be sa (stochastic approximation, the default) or ee (equilibrium expectation)"
 		error 198
