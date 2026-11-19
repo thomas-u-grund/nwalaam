@@ -57,7 +57,7 @@
 #include <unistd.h>
 #endif
 
-#define ALAAM_PROTOCOL 6
+#define ALAAM_PROTOCOL 7
 #define HDR 16
 
 /* Threads (only the independent EE runs use them; no Stata plugin interface call is made from a worker thread). */
@@ -143,6 +143,49 @@ static double dir_f(int kind, double par, double n) {
 	return pow(n, 1.0 / par);
 }
 
+/* f(n, d) of the threshold (kind 0: n >= par), fraction (kind 1: d > 0 and n/d >= par) and share (kind 2: n/d, 0 when d = 0) contagion
+   statistics of a node with the outcome, n ties to nodes with the outcome and d ties in all */
+static double thr_f(int kind, double par, int n, int d) {
+	if (kind == 0) return n >= par - 1e-9 ? 1.0 : 0.0;
+	if (kind == 1) return (d > 0 && (double)n >= par * d - 1e-9) ? 1.0 : 0.0;
+	return d > 0 ? (double)n / d : 0.0;
+}
+
+/* number of ties (in and out; a mutual tie twice) of node j to nodes with the outcome, and of all its ties */
+static int nbr_count(const Model *g, const signed char *A, int j, int *dall) {
+	int k, c = 0, d = OUTDEG(g, j);
+	for (k = 0; k < OUTDEG(g, j); k++) if (A[ONB(g, j, k)] == 1) c++;
+	if (g->directed) {
+		d += INDEG(g, j);
+		for (k = 0; k < INDEG(g, j); k++) if (A[INB(g, j, k)] == 1) c++;
+	}
+	*dall = d;
+	return c;
+}
+
+/* change statistic of the threshold, fraction and share contagion effects (undirected and directed): sum over nodes j with the outcome of
+   f(n_j, d_j); node i enters with its own term and raises n_j of each neighbour j with the outcome (by 2 for a mutual tie) */
+static double thr_like(const Model *g, const signed char *A, int i, int kind, double par) {
+	int k, d, n = nbr_count(g, A, i, &d);
+	double delta = thr_f(kind, par, n, d);
+	for (k = 0; k < OUTDEG(g, i); k++) {
+		int j = ONB(g, i, k), m = 1, dj, nj;
+		if (A[j] != 1) continue;
+		if (g->directed && isarc(g, j, i)) m = 2;
+		nj = nbr_count(g, A, j, &dj);
+		delta += thr_f(kind, par, nj + m, dj) - thr_f(kind, par, nj, dj);
+	}
+	if (g->directed) {
+		for (k = 0; k < INDEG(g, i); k++) {
+			int j = INB(g, i, k), dj, nj;
+			if (A[j] != 1 || isarc(g, i, j)) continue;
+			nj = nbr_count(g, A, j, &dj);
+			delta += thr_f(kind, par, nj + 1, dj) - thr_f(kind, par, nj, dj);
+		}
+	}
+	return delta;
+}
+
 /*
 	Change statistic of one effect for node i; A[i] must be 0 on entry.
 	Undirected: 1 density 2 activity 3 twostar 4 threestar 5 gwactivity(a) 6 contagion 7 alter2star1 (partner activity two-path)
@@ -151,12 +194,14 @@ static double dir_f(int kind, double par, double n) {
 	  22 samepartneractivity(c) 23 diffpartneractivity(c) 24 sameindirect(c) 25 diffindirect(c) 26 alterbinarytwostar1(b) 27 alterbinarytwostar2(b)
 	  28 fourcycle1 29 fourcycle2 (two-mode networks, undirected otherwise) 40 settinghomophily(setting network) 41 geographichomophily(distance matrix)
 	  42 contagiondist(distance matrix); 40 and 41 also for directed networks
+	  43 thresholdcontagion(k) 44 fractioncontagion(q) 45 sharecontagion (also directed, below)
 	Directed (ties i -> j): 1 density 17 ego(x) and
 	  102 sender 103 receiver 104 reciprocity 105 instar2 106 instar3 107 outstar2 108 outstar3 109 mixedstar 110 mixedsource
 	  111 mixedsink 112 contagion 113 contagionrecip 114 transitive1 115 transitive3 116 transitived1 117 transitiveu1
 	  118 cyclic1 119 cyclic3 120 alterin2star2 121 alterout2star2 122 gwsender(a) 123 gwreceiver(a) 124 alter(x)
 	  125 gwcontagion(a) 126 logcontagion 127 powercontagion(b) 128 same(c) 129 diff(c) 130 samecontagion(c) 131 sendermatch(c)
 	  132 sendermismatch(c) 133 receivermatch(c) 134 receivermismatch(c) 135 reciprocitymatch(c) 136 reciprocitymismatch(c)
+	  137 thresholdcontagion(k) 138 fractioncontagion(q) 139 sharecontagion (n and d count ties in and out, a mutual tie twice)
 */
 static double change_stat(const Model *g, const signed char *A, int i, int e) {
 	int type = g->etype[e], k, l, d = 0, di;
@@ -238,6 +283,7 @@ static double change_stat(const Model *g, const signed char *A, int i, int e) {
 			for (k = 0; k < di; k++) { int u = ONB(g, i, k); if (A[u] == 1) delta += dm[u]; }
 			return delta;
 		}
+		case 43: case 44: case 45: return thr_like(g, A, i, type - 43, par);
 		case 14: return gw_like(g, A, i, 0, par);
 		case 15: return gw_like(g, A, i, 1, par);
 		case 16: return gw_like(g, A, i, 2, par);
@@ -344,6 +390,7 @@ static double change_stat(const Model *g, const signed char *A, int i, int e) {
 		case 121:
 			for (k = 0; k < o; k++) { int u = ONB(g, i, k); for (l = 0; l < INDEG(g, u); l++) { int v = INB(g, u, l); if (v != i && A[v] == 1) d++; } }
 			return d;
+		case 137: case 138: case 139: return thr_like(g, A, i, type - 137, par);
 		case 122: return exp(-par * o);
 		case 123: return exp(-par * in);
 		case 125: case 126: case 127: {

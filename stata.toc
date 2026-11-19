@@ -1,5 +1,5 @@
 v 3
 d nwalaam: autologistic actor attribute models for Stata
 
-p nwalaam Autologistic actor attribute models (ALAAM) v1.1.1
+p nwalaam Autologistic actor attribute models (ALAAM) v1.2.0
 d nwalaam. Autologistic actor attribute models (ALAAMs) for a binary node outcome on a fixed network, by equilibrium expectation

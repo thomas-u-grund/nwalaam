@@ -3,6 +3,16 @@
 All notable changes to nwalaam are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project uses [Semantic Versioning](https://semver.org/).
 
+## [1.2.0] - 2026-11-19
+
+### Added
+- Three effects for exposure thresholds, for undirected networks (30 effects now) and directed networks (40 effects now): `thresholdcontagion(k)`, the number of actors with the outcome that have at least `k` neighbours with the outcome (default `k` = 2); `fractioncontagion(q)`, the number of actors with the outcome of which at least the share `q` of the neighbours have the outcome (0 < `q` <= 1, default 0.5); and `sharecontagion`, the sum over the actors with the outcome of the share of their neighbours that have the outcome. In a directed network the neighbours are the ties in and out (a mutual tie counts twice). With them a specification can represent complex contagion; ALAAMEE has no such effects. They are not defined for two-mode networks. The change statistics are exact (the threshold effects are step functions) and are tested against the definitions of the statistics.
+
+### Changed
+- The plugin needs the new version (protocol 7); a plugin of version 1.1.x is refused with a message to update.
+
+Tested on macOS with Stata 17 BE (the full test suite, 11 test files). Windows and Linux: not tested for this version.
+
 ## [1.1.1] - 2026-11-18
 
 ### Fixed

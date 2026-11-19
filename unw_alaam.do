@@ -117,7 +117,7 @@ real scalar AlaamNativeAvailable()
 	return(fileexists(p))
 }
 
-real scalar ALAAM_PROTOCOL_NEEDED() return(6)
+real scalar ALAAM_PROTOCOL_NEEDED() return(7)
 
 /*
 	The plugin's frame. setup() writes the model (see the header of native/alaam_sim.c); call() runs one plugin code and
@@ -321,6 +321,10 @@ void alaam_effects(string scalar spec, real scalar directed, real scalar twomode
 		"alteroutstar2", "0", "121", "0", "" \
 		"gwsender", "0", "122", "1", "0.693147180559945" \
 		"gwreceiver", "0", "123", "1", "0.693147180559945")
+	// threshold contagion (kind 5: positive integer, default 2), fraction contagion (kind 6: 0 < q <= 1, default 0.5), share contagion (no argument)
+	tbl = tbl \ ("thresholdcontagion", "43", "137", "5", "2" \
+		"fractioncontagion", "44", "138", "6", "0.5" \
+		"sharecontagion", "45", "139", "0", "")
 	toks = tokens(subinstr(subinstr(spec, "(", " ( "), ")", " ) "))
 	// re-join name and (argument): tokens() with "()" parse chars gives name, "(", arg, ")"
 	et = J(1, 0, .); ep = et; ec = et; names = J(1, 0, ""); covnames = J(1, 0, ""); setnames = J(1, 0, ""); distnames = J(1, 0, "")
@@ -366,6 +370,20 @@ void alaam_effects(string scalar spec, real scalar directed, real scalar twomode
 			errprintf("{p 0 0 2}nwalaam: effect {bf:%s} takes no argument.{p_end}\n", nm)
 			exit(198)
 		}
+		if (p == 5 | p == 6) {
+			par = strtoreal(tbl[j, 5])
+			if (hasarg) {
+				par = strtoreal(strtrim(arg))
+				if (p == 5 & (par >= . | par < 1 | par != floor(par))) {
+					errprintf("{p 0 0 2}nwalaam: the argument of {bf:%s} must be a positive integer.{p_end}\n", nm)
+					exit(198)
+				}
+				if (p == 6 & (par >= . | par <= 0 | par > 1)) {
+					errprintf("{p 0 0 2}nwalaam: the argument of {bf:%s} must be a number above 0 and at most 1.{p_end}\n", nm)
+					exit(198)
+				}
+			}
+		}
 		if (p == 1) {
 			par = strtoreal(tbl[j, 5])
 			if (hasarg) {
@@ -376,7 +394,7 @@ void alaam_effects(string scalar spec, real scalar directed, real scalar twomode
 				}
 			}
 		}
-		if (p >= 3) {
+		if (p == 3 | p == 4) {
 			c = strtrim(arg)
 			if (c == "") {
 				errprintf("{p 0 0 2}nwalaam: effect {bf:%s} needs %s: %s(%s).{p_end}\n", nm, (p == 3 ? "a setting network" : "a distance matrix"), nm, (p == 3 ? "netname" : "matname"))
@@ -407,7 +425,7 @@ void alaam_effects(string scalar spec, real scalar directed, real scalar twomode
 			ec = ec, selectindex(distnames :== c)
 			names = names, abbrev(nm + "_" + c, 32)
 		}
-		else if (p == 1 & hasarg) {
+		else if ((p == 1 | p == 5 | p == 6) & hasarg) {
 			ps = strtrim(strofreal(par, "%9.4g"))
 			if (substr(ps, 1, 1) == ".") ps = "0" + ps
 			ps = subinstr(ps, ".", "p")

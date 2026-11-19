@@ -1,6 +1,6 @@
 # nwalaam
 
-<!--version-->**Version 1.1.1** (released 18 November 2026)<!--/version-->
+<!--version-->**Version 1.2.0** (released 19 November 2026)<!--/version-->
 
 Autologistic actor attribute models (ALAAMs) for Stata: a binary outcome on the nodes of a fixed network, explained by the network
 structure around the nodes (contagion, activity, triangles, covariates ...). Part of the nwcommands family; requires the core package
@@ -14,6 +14,7 @@ structure around the nodes (contagion, activity, triangles, covariates ...). Par
 . nwalaam simulate, nsim(100) generate(sim) seed(2)
 . nwalaam y affiliations, effects(density activity fourcycle1 fourcycle2) mode(1)       // two-mode network
 . nwalaam y g, effects(density contagion settinghomophily(school)) sampler(zoo)        // setting network, zero-or-one sampler
+. nwalaam faction karate, effects(density activity thresholdcontagion(2))                  // exposure threshold (complex contagion)
 . nwalaam y g, effects(density contagion) zone(zone)                                   // snowball sample (conditional sampler)
 ```
 

@@ -1,4 +1,4 @@
-*! version 1.1.1  18nov2026 nwalaam
+*! version 1.2.0  19nov2026 nwalaam
 * Copyright (C) 2026 Thomas U. Grund
 * This file is part of nwalaam, a Stata package for autologistic actor attribute models (ALAAMs). It follows the
 * method of the ALAAMEE software (Stivala, Wang and Lomi; MIT licence) and is written independently.
@@ -127,7 +127,7 @@ program nwalaam, eclass
 	ereturn post `B' `V', obs(`__ny')
 	ereturn local cmd "nwalaam"
 	ereturn local estat_cmd "nwalaam_estat"
-	ereturn local version "1.1.1"
+	ereturn local version "1.2.0"
 	ereturn local depvar "`depvar'"
 	ereturn local network "`netname'"
 	ereturn local effects "`__names'"

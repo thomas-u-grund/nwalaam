@@ -1,5 +1,5 @@
 {smcl}
-{* *! version 1.1.1  18nov2026 author: Thomas Grund}{...}
+{* *! version 1.2.0  19nov2026 author: Thomas Grund}{...}
 {marker topic}
 {title:Title}
 
@@ -113,6 +113,9 @@ values (differences below 1e-15).
 coefficient says that actors with the outcome are tied to each other more often than the other effects explain. It does not
 identify social influence: the same pattern arises when actors choose friends who are like them (selection) or share a
 setting (confounding). The network is taken as given; use a longitudinal model such as {helpb nwsaom} to separate influence and selection.
+The contagion coefficient alone cannot tell whether one exposed neighbour or several are needed: {cmd:thresholdcontagion}, {cmd:fractioncontagion} and
+{cmd:sharecontagion} let a specification represent exposure thresholds (complex contagion), but a significant coefficient of such a term is still a
+statement about how the outcome is distributed over the network, not about the process that produced it.
 
 
 {marker effects}{...}
@@ -135,6 +138,9 @@ setting (confounding). The network is taken as given; use a longitudinal model s
 {p2col :{cmd:gwcontagion}[{cmd:(}{it:a}{cmd:)}]}sum over nodes with the outcome of exp(-a n) with n the number of neighbours with the outcome{p_end}
 {p2col :{cmd:logcontagion}}sum over nodes with the outcome of log(n + 1){p_end}
 {p2col :{cmd:powercontagion}[{cmd:(}{it:b}{cmd:)}]}sum over nodes with the outcome of n^(1/b); default {it:b} = 2{p_end}
+{p2col :{cmd:thresholdcontagion}[{cmd:(}{it:k}{cmd:)}]}number of nodes with the outcome that have at least {it:k} neighbours with the outcome; {it:k} a positive integer, default 2{p_end}
+{p2col :{cmd:fractioncontagion}[{cmd:(}{it:q}{cmd:)}]}number of nodes with the outcome of which at least the share {it:q} of the neighbours have the outcome (nodes without neighbours do not count); 0 < {it:q} <= 1, default 0.5{p_end}
+{p2col :{cmd:sharecontagion}}sum over nodes with the outcome of the share of their neighbours that have the outcome (0 for a node without neighbours){p_end}
 {p2col :{cmd:ego(}{it:var}{cmd:)}}sum of the numeric covariate over the nodes with the outcome (centre the covariate){p_end}
 {p2col :{cmd:alter(}{it:var}{cmd:)}}sum over the nodes with the outcome of the covariate of their neighbours{p_end}
 {p2col :{cmd:same(}{it:var}{cmd:)}, {cmd:diff(}{it:var}{cmd:)}}neighbours with the same / a different category{p_end}
@@ -158,6 +164,7 @@ setting (confounding). The network is taken as given; use a longitudinal model s
 {p2col :{cmd:contagion}}ties to nodes with the outcome, in and out; a mutual tie counts twice{p_end}
 {p2col :{cmd:contagionrecip}}mutual ties between two nodes with the outcome{p_end}
 {p2col :{cmd:gwcontagion}[{cmd:(}{it:a}{cmd:)}], {cmd:logcontagion}, {cmd:powercontagion}[{cmd:(}{it:b}{cmd:)}]}as in undirected networks, with the number of ties (in and out) to nodes with the outcome{p_end}
+{p2col :{cmd:thresholdcontagion}[{cmd:(}{it:k}{cmd:)}], {cmd:fractioncontagion}[{cmd:(}{it:q}{cmd:)}], {cmd:sharecontagion}}as in undirected networks; {it:n} is the number of ties (in and out; a mutual tie counts twice) to nodes with the outcome and the share is {it:n} divided by the number of all ties (in and out) of the node{p_end}
 {p2col :{cmd:transitive1}, {cmd:transitive3}}transitive triples (a->b, b->c, a->c): the number of triples in which the node with the outcome is the middle node b; all three nodes with the outcome{p_end}
 {p2col :{cmd:transitived1}, {cmd:transitiveu1}}transitive triples in which the node with the outcome is the source a, the sink c{p_end}
 {p2col :{cmd:cyclic1}, {cmd:cyclic3}}cyclic triples (a->b->c->a) with the node with the outcome in it; all three nodes with the outcome{p_end}
@@ -172,7 +179,8 @@ setting (confounding). The network is taken as given; use a longitudinal model s
 {p2colreset}{...}
 The definitions are those of ALAAMEE (Stivala, Wang and Lomi), including its change statistics of the directed gw, log and power contagion, which sum over the
 out-neighbours with the outcome (counting their in-neighbours with the outcome) and the in-neighbours with the outcome (counting their out-neighbours with the
-outcome). Continuous covariates are used as they are: centre them.
+outcome). The threshold, fraction and share contagion effects are not part of ALAAMEE; they are exact counts of the nodes with the outcome by their exposure (the
+number or the share of their neighbours with the outcome). They are not defined for two-mode networks, whose ties join nodes of different levels. Continuous covariates are used as they are: centre them.
 
 {pstd}{bf:Setting network and distance matrix.} {it:netname} of {cmd:settinghomophily()} is another network of the same actors (one-mode; direction is ignored). {it:matname}
 is a Stata matrix (or, for large networks, a Mata matrix) with one row and one column for each actor of the network, in the order of the network; a
@@ -265,4 +273,4 @@ scalars {cmd:e(N)}, {cmd:e(n_ones)}, {cmd:e(nodes)}, {cmd:e(runs)}, {cmd:e(runs_
 {p 4 8 2}Stivala, A. 2023. Overcoming near-degeneracy in the autologistic actor attribute model. arXiv:2309.07338.{p_end}
 
 {hline}
-{pstd}{it:nwalaam version 1.1.1, 18 November 2026}{p_end}{* nwversion}
+{pstd}{it:nwalaam version 1.2.0, 19 November 2026}{p_end}{* nwversion}

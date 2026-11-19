@@ -1,0 +1,29 @@
+. nwalaam faction karate, effects(density activity thresholdcontagion(2)) seed(20261118)
+----------------------------------------------------------------------
+Autologistic actor attribute model (stochastic approximation)
+Outcome: faction (18 of 34)                    Network: karate
+SA repetitions: 1 (converged: yes)             Proposals per iteration: 1000
+----------------------------------------------------------------------
+-------------------------------------------------------------
+             faction | Coefficient  Std. err.      z    P>|z|
+---------------------+---------------------------------------
+             density |  -.8404106   1.058695    -0.79   0.427
+            activity |  -.6176987   .1984508    -3.11   0.002
+thresholdcontagion_2 |   3.603922   1.135949     3.17   0.002
+-------------------------------------------------------------
+All convergence t-ratios are within .1 in absolute value.
+
+. nwalaam faction karate, effects(density activity sharecontagion) seed(20261118)
+----------------------------------------------------------------------
+Autologistic actor attribute model (stochastic approximation)
+Outcome: faction (18 of 34)                    Network: karate
+SA repetitions: 4 (converged: yes)             Proposals per iteration: 1000
+----------------------------------------------------------------------
+-------------------------------------------------------
+       faction | Coefficient  Std. err.      z    P>|z|
+---------------+---------------------------------------
+       density |  -.8318346   1.156478    -0.72   0.472
+      activity |  -.6585445   .2802429    -2.35   0.019
+sharecontagion |   3.885544   .9356053     4.15   0.000
+-------------------------------------------------------
+All convergence t-ratios are within .1 in absolute value.
