@@ -22,6 +22,9 @@ Effects are listed in \opt{effects()} separated by blanks; an effect with an arg
 \opt{thresholdcontagion}[(\emph{k})] & The number of actors with the outcome that have at least $k$ neighbours with the outcome, $\sum_i a_i\,[n_i\ge k]$; $k$ a positive integer, default 2. \\
 \opt{fractioncontagion}[(\emph{q})] & The number of actors with the outcome of which at least the share $q$ of the neighbours have the outcome, $\sum_i a_i\,[d_i>0,\ n_i/d_i\ge q]$; $0<q\le 1$, default 0.5. \\
 \opt{sharecontagion} & $\sum_i a_i\,n_i/d_i$ (0 for an actor without neighbours). \\
+\opt{thresholdexposure}[(\emph{k})] & The number of actors \emph{without} the outcome that have at least $k$ neighbours with the outcome, $\sum_i (1-a_i)\,[n_i\ge k]$; $k$ a positive integer, default 2. \\
+\opt{fractionexposure}[(\emph{q})] & The number of actors without the outcome of which at least the share $q$ of the neighbours have the outcome, $\sum_i (1-a_i)\,[d_i>0,\ n_i/d_i\ge q]$; $0<q\le 1$, default 0.5. \\
+\opt{shareexposure} & $\sum_i (1-a_i)\,n_i/d_i$ (0 for an actor without neighbours). \\
 \opt{ego(var)} & The covariate of the actors with the outcome, $\sum_i a_i v_i$ (centre it). \\
 \opt{alter(var)} & The sum over the actors with the outcome of the covariate of their neighbours. \\
 \opt{same(var)}, \opt{diff(var)} & The number of ties of the actors with the outcome to neighbours of the same, or of a different, category. \\
@@ -34,6 +37,8 @@ Effects are listed in \opt{effects()} separated by blanks; an effect with an arg
 \end{longtable}
 
 \paragraph{Exposure thresholds.} \opt{contagion} counts ties between actors with the outcome, so each neighbour with the outcome adds the same amount to the log odds of an actor. The effects \opt{thresholdcontagion}, \opt{fractioncontagion} and \opt{sharecontagion} let the exposure enter in another form: as a step (at least $k$ neighbours, or at least the share $q$ of the neighbours, with the outcome) or as a share. They are the terms with which a specification can represent complex contagion. The listing fits the threshold effect $k=2$ and the share on the karate club, in place of \opt{contagion}.
+
+\paragraph{Exposed actors without the outcome.} The effects \opt{thresholdexposure}, \opt{fractionexposure} and \opt{shareexposure} apply the same three statistics to the actors \emph{without} the outcome: they count the actors that are exposed to neighbours with the outcome but have not adopted. A negative coefficient says that there are fewer such actors than the other effects imply, that is, exposed actors tend to have the outcome. Used together with a contagion effect they describe the exposure of the actors with and without the outcome. As with every effect, a coefficient describes how the outcome is distributed over the network and says nothing certain about the process that produced it.
 \showlog{thresholds_karate}
 A step function can be almost collinear with \opt{density}: when nearly all actors with the outcome meet the threshold (here 17 of the 18 members of the faction have at least two neighbours with the outcome), the statistic hardly differs from the number of actors with the outcome, and the standard errors are large. Choose $k$ or $q$ so that a good part of the actors with the outcome lies on each side; with a threshold that nearly all or nearly none of them meet, the fit stops with a message that the simulated statistics are collinear (return code 430).
 
@@ -53,7 +58,7 @@ In a directed network $x_{ij}$ is the tie from $i$ to $j$. The definitions are t
 \opt{contagion} & The ties, in and out, to actors with the outcome; a mutual tie counts twice. \\
 \opt{contagionrecip} & The mutual ties between two actors with the outcome. \\
 \opt{gwcontagion}[(\emph{a})], \opt{logcontagion}, \opt{powercontagion}[(\emph{b})] & As in undirected networks, with the number of ties (in and out) to actors with the outcome. Their change statistics sum over the out-neighbours with the outcome (counting their in-neighbours with the outcome) and over the in-neighbours with the outcome (counting their out-neighbours with the outcome), as in \alaamee{}. \\
-\opt{thresholdcontagion}[(\emph{k})], \opt{fractioncontagion}[(\emph{q})], \opt{sharecontagion} & As in undirected networks; $n_i$ is the number of ties (in and out; a mutual tie counts twice) to actors with the outcome and $d_i$ the number of all ties (in and out) of the actor. \\
+\opt{thresholdcontagion}[(\emph{k})], \opt{fractioncontagion}[(\emph{q})], \opt{sharecontagion}, \opt{thresholdexposure}[(\emph{k})], \opt{fractionexposure}[(\emph{q})], \opt{shareexposure} & As in undirected networks; $n_i$ is the number of ties (in and out; a mutual tie counts twice) to actors with the outcome and $d_i$ the number of all ties (in and out) of the actor. \\
 \opt{transitive1}, \opt{transitive3} & Transitive triples ($a\to b$, $b\to c$, $a\to c$): the number in which the actor with the outcome is the middle actor $b$; those with all three actors with the outcome. \\
 \opt{transitived1}, \opt{transitiveu1} & Transitive triples in which the actor with the outcome is the source $a$, or the sink $c$. \\
 \opt{cyclic1}, \opt{cyclic3} & Cyclic triples ($a\to b\to c\to a$) with an actor with the outcome in them; those with all three actors with the outcome. \\

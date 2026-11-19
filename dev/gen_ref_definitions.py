@@ -46,6 +46,10 @@ def z_und(name, par, A, y, c, k, b):
     if name == "thresholdcontagion": return sum(1 for j in ones if dplus[j] >= par)
     if name == "fractioncontagion": return sum(1 for j in ones if d[j] > 0 and dplus[j] * 10 >= round(par * 10) * d[j])
     if name == "sharecontagion": return sum(dplus[j] / d[j] for j in ones if d[j] > 0)
+    zeros = [j for j in range(n) if not y[j]]
+    if name == "thresholdexposure": return sum(1 for j in zeros if dplus[j] >= par)
+    if name == "fractionexposure": return sum(1 for j in zeros if d[j] > 0 and dplus[j] * 10 >= round(par * 10) * d[j])
+    if name == "shareexposure": return sum(dplus[j] / d[j] for j in zeros if d[j] > 0)
     if name == "ego_c": return sum(c[i] for i in ones)
     if name == "alter_c": return sum(c[u] for i in ones for u in N[i])
     if name == "same_k": return sum(1 for i in ones for u in N[i] if k[u] == k[i])
@@ -107,6 +111,10 @@ def z_dir(name, par, A, y, c, k, b):
     if name == "thresholdcontagion": return sum(1 for i in ones if nn[i] >= par)
     if name == "fractioncontagion": return sum(1 for i in ones if dd[i] > 0 and nn[i] * 10 >= round(par * 10) * dd[i])
     if name == "sharecontagion": return sum(nn[i] / dd[i] for i in ones if dd[i] > 0)
+    zeros = [i for i in range(n) if not y[i]]
+    if name == "thresholdexposure": return sum(1 for i in zeros if nn[i] >= par)
+    if name == "fractionexposure": return sum(1 for i in zeros if dd[i] > 0 and nn[i] * 10 >= round(par * 10) * dd[i])
+    if name == "shareexposure": return sum(nn[i] / dd[i] for i in zeros if dd[i] > 0)
     if name == "same_k": return sum(1 for i in ones for u in out_[i] + in_[i] if k[u] == k[i])
     if name == "diff_k": return sum(1 for i in ones for u in out_[i] + in_[i] if k[u] != k[i])
     if name == "samecontagion_k": return sum(1 for i in range(n) for u in out_[i] if y[i] and y[u] and k[i] == k[u])
@@ -178,7 +186,9 @@ und = [("density", None), ("activity", None), ("twostar", None), ("threestar", N
        ("samepartneractivity_k", None), ("diffpartneractivity_k", None), ("sameindirect_k", None), ("diffindirect_k", None),
        ("alterbinarytwostar1_b", None), ("alterbinarytwostar2_b", None),
        ("thresholdcontagion", 1), ("thresholdcontagion", 2), ("thresholdcontagion", 3), ("fractioncontagion", 0.3),
-       ("fractioncontagion", 0.5), ("fractioncontagion", 1.0), ("sharecontagion", None)]
+       ("fractioncontagion", 0.5), ("fractioncontagion", 1.0), ("sharecontagion", None),
+       ("thresholdexposure", 1), ("thresholdexposure", 2), ("thresholdexposure", 3), ("fractionexposure", 0.3),
+       ("fractionexposure", 0.5), ("fractionexposure", 1.0), ("shareexposure", None)]
 dire = [("density", None), ("sender", None), ("receiver", None), ("reciprocity", None), ("instar2", None), ("instar3", None),
         ("outstar2", None), ("outstar3", None), ("mixedstar", None), ("mixedsource", None), ("mixedsink", None), ("contagion", None),
         ("contagionrecip", None), ("transitive1", None), ("transitive3", None), ("transitived1", None), ("transitiveu1", None),
@@ -188,7 +198,9 @@ dire = [("density", None), ("sender", None), ("receiver", None), ("reciprocity",
         ("sendermatch_k", None), ("sendermismatch_k", None), ("receivermatch_k", None), ("receivermismatch_k", None),
         ("reciprocitymatch_k", None), ("reciprocitymismatch_k", None),
         ("thresholdcontagion", 1), ("thresholdcontagion", 2), ("thresholdcontagion", 3), ("fractioncontagion", 0.3),
-        ("fractioncontagion", 0.5), ("fractioncontagion", 1.0), ("sharecontagion", None)]
+        ("fractioncontagion", 0.5), ("fractioncontagion", 1.0), ("sharecontagion", None),
+       ("thresholdexposure", 1), ("thresholdexposure", 2), ("thresholdexposure", 3), ("fractionexposure", 0.3),
+       ("fractionexposure", 0.5), ("fractionexposure", 1.0), ("shareexposure", None)]
 write_case("und_a", 26, False, 0.2, und)
 write_case("und_b", 18, False, 0.35, und)
 write_case("dir_a", 22, True, 0.15, dire)

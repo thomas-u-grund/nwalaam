@@ -116,6 +116,10 @@ setting (confounding). The network is taken as given; use a longitudinal model s
 The contagion coefficient alone cannot tell whether one exposed neighbour or several are needed: {cmd:thresholdcontagion}, {cmd:fractioncontagion} and
 {cmd:sharecontagion} let a specification represent exposure thresholds (complex contagion), but a significant coefficient of such a term is still a
 statement about how the outcome is distributed over the network, not about the process that produced it.
+The exposure effects {cmd:thresholdexposure}, {cmd:fractionexposure} and {cmd:shareexposure} apply the same statistics to the nodes {it:without}
+the outcome: they count nodes that are exposed but have not adopted. A negative coefficient means that there are fewer such exposed nodes than the
+other effects imply, that is, exposed nodes tend to have the outcome. Together with the contagion effects they let a specification
+represent exposure thresholds more fully; as with all effects, they describe the distribution of the outcome, not the process.
 
 
 {marker effects}{...}
@@ -141,6 +145,9 @@ statement about how the outcome is distributed over the network, not about the p
 {p2col :{cmd:thresholdcontagion}[{cmd:(}{it:k}{cmd:)}]}number of nodes with the outcome that have at least {it:k} neighbours with the outcome; {it:k} a positive integer, default 2{p_end}
 {p2col :{cmd:fractioncontagion}[{cmd:(}{it:q}{cmd:)}]}number of nodes with the outcome of which at least the share {it:q} of the neighbours have the outcome (nodes without neighbours do not count); 0 < {it:q} <= 1, default 0.5{p_end}
 {p2col :{cmd:sharecontagion}}sum over nodes with the outcome of the share of their neighbours that have the outcome (0 for a node without neighbours){p_end}
+{p2col :{cmd:thresholdexposure}[{cmd:(}{it:k}{cmd:)}]}number of nodes {it:without} the outcome that have at least {it:k} neighbours with the outcome; {it:k} a positive integer, default 2{p_end}
+{p2col :{cmd:fractionexposure}[{cmd:(}{it:q}{cmd:)}]}number of nodes without the outcome of which at least the share {it:q} of the neighbours have the outcome (nodes without neighbours do not count); 0 < {it:q} <= 1, default 0.5{p_end}
+{p2col :{cmd:shareexposure}}sum over nodes without the outcome of the share of their neighbours that have the outcome (0 for a node without neighbours){p_end}
 {p2col :{cmd:ego(}{it:var}{cmd:)}}sum of the numeric covariate over the nodes with the outcome (centre the covariate){p_end}
 {p2col :{cmd:alter(}{it:var}{cmd:)}}sum over the nodes with the outcome of the covariate of their neighbours{p_end}
 {p2col :{cmd:same(}{it:var}{cmd:)}, {cmd:diff(}{it:var}{cmd:)}}neighbours with the same / a different category{p_end}
@@ -164,7 +171,7 @@ statement about how the outcome is distributed over the network, not about the p
 {p2col :{cmd:contagion}}ties to nodes with the outcome, in and out; a mutual tie counts twice{p_end}
 {p2col :{cmd:contagionrecip}}mutual ties between two nodes with the outcome{p_end}
 {p2col :{cmd:gwcontagion}[{cmd:(}{it:a}{cmd:)}], {cmd:logcontagion}, {cmd:powercontagion}[{cmd:(}{it:b}{cmd:)}]}as in undirected networks, with the number of ties (in and out) to nodes with the outcome{p_end}
-{p2col :{cmd:thresholdcontagion}[{cmd:(}{it:k}{cmd:)}], {cmd:fractioncontagion}[{cmd:(}{it:q}{cmd:)}], {cmd:sharecontagion}}as in undirected networks; {it:n} is the number of ties (in and out; a mutual tie counts twice) to nodes with the outcome and the share is {it:n} divided by the number of all ties (in and out) of the node{p_end}
+{p2col :{cmd:thresholdcontagion}[{cmd:(}{it:k}{cmd:)}], {cmd:fractioncontagion}[{cmd:(}{it:q}{cmd:)}], {cmd:sharecontagion}, {cmd:thresholdexposure}[{cmd:(}{it:k}{cmd:)}], {cmd:fractionexposure}[{cmd:(}{it:q}{cmd:)}], {cmd:shareexposure}}as in undirected networks; {it:n} is the number of ties (in and out; a mutual tie counts twice) to nodes with the outcome and the share is {it:n} divided by the number of all ties (in and out) of the node{p_end}
 {p2col :{cmd:transitive1}, {cmd:transitive3}}transitive triples (a->b, b->c, a->c): the number of triples in which the node with the outcome is the middle node b; all three nodes with the outcome{p_end}
 {p2col :{cmd:transitived1}, {cmd:transitiveu1}}transitive triples in which the node with the outcome is the source a, the sink c{p_end}
 {p2col :{cmd:cyclic1}, {cmd:cyclic3}}cyclic triples (a->b->c->a) with the node with the outcome in it; all three nodes with the outcome{p_end}

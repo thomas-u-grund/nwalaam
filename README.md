@@ -14,7 +14,7 @@ structure around the nodes (contagion, activity, triangles, covariates ...). Par
 . nwalaam simulate, nsim(100) generate(sim) seed(2)
 . nwalaam y affiliations, effects(density activity fourcycle1 fourcycle2) mode(1)       // two-mode network
 . nwalaam y g, effects(density contagion settinghomophily(school)) sampler(zoo)        // setting network, zero-or-one sampler
-. nwalaam faction karate, effects(density activity thresholdcontagion(2))                  // exposure threshold (complex contagion)
+. nwalaam faction karate, effects(density activity thresholdcontagion(2))                  // exposure threshold (complex contagion); thresholdexposure(2) counts the exposed actors without the outcome
 . nwalaam y g, effects(density contagion) zone(zone)                                   // snowball sample (conditional sampler)
 ```
 

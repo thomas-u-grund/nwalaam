@@ -6,12 +6,14 @@ project uses [Semantic Versioning](https://semver.org/).
 ## [1.2.0] - 2026-11-19
 
 ### Added
-- Three effects for exposure thresholds, for undirected networks (30 effects now) and directed networks (40 effects now): `thresholdcontagion(k)`, the number of actors with the outcome that have at least `k` neighbours with the outcome (default `k` = 2); `fractioncontagion(q)`, the number of actors with the outcome of which at least the share `q` of the neighbours have the outcome (0 < `q` <= 1, default 0.5); and `sharecontagion`, the sum over the actors with the outcome of the share of their neighbours that have the outcome. In a directed network the neighbours are the ties in and out (a mutual tie counts twice). With them a specification can represent complex contagion; ALAAMEE has no such effects. They are not defined for two-mode networks. The change statistics are exact (the threshold effects are step functions) and are tested against the definitions of the statistics.
+- Three effects for exposure thresholds, for undirected networks and directed networks: `thresholdcontagion(k)`, the number of actors with the outcome that have at least `k` neighbours with the outcome (default `k` = 2); `fractioncontagion(q)`, the number of actors with the outcome of which at least the share `q` of the neighbours have the outcome (0 < `q` <= 1, default 0.5); and `sharecontagion`, the sum over the actors with the outcome of the share of their neighbours that have the outcome. In a directed network the neighbours are the ties in and out (a mutual tie counts twice). With them a specification can represent complex contagion; ALAAMEE has no such effects. They are not defined for two-mode networks. The change statistics are exact (the threshold effects are step functions) and are tested against the definitions of the statistics.
+
+- Three effects for the actors that are exposed but do not have the outcome: `thresholdexposure(k)`, the number of actors without the outcome that have at least `k` neighbours with the outcome (default 2); `fractionexposure(q)`, the number of actors without the outcome of which at least the share `q` of the neighbours have the outcome (default 0.5); and `shareexposure`, the sum over the actors without the outcome of the share of their neighbours that have the outcome. With these and the three effects above the package has 33 effects for undirected and 43 for directed networks. Same neighbour definition as above (a mutual tie counts twice); not defined for two-mode networks. The change statistics are exact and tested against the definitions.
 
 ### Changed
 - The plugin needs the new version (protocol 7); a plugin of version 1.1.x is refused with a message to update.
 
-Tested on macOS with Stata 17 BE (the full test suite, 11 test files). Windows and Linux: not tested for this version.
+Tested on macOS with Stata 17 BE: the change-statistic test (every effect against its definition, including the six new effects), the threshold and exposure test and the main test file, run after the last change; the full suite has not been rerun since the exposure effects were added. The same three tests passed on Linux (Ubuntu 22.04, StataNow 19 MP, plugin built there with `make unix`). Windows: not tested for this version.
 
 ## [1.1.1] - 2026-11-18
 

@@ -324,7 +324,10 @@ void alaam_effects(string scalar spec, real scalar directed, real scalar twomode
 	// threshold contagion (kind 5: positive integer, default 2), fraction contagion (kind 6: 0 < q <= 1, default 0.5), share contagion (no argument)
 	tbl = tbl \ ("thresholdcontagion", "43", "137", "5", "2" \
 		"fractioncontagion", "44", "138", "6", "0.5" \
-		"sharecontagion", "45", "139", "0", "")
+		"sharecontagion", "45", "139", "0", "" \
+		"thresholdexposure", "46", "140", "5", "2" \
+		"fractionexposure", "47", "141", "6", "0.5" \
+		"shareexposure", "48", "142", "0", "")
 	toks = tokens(subinstr(subinstr(spec, "(", " ( "), ")", " ) "))
 	// re-join name and (argument): tokens() with "()" parse chars gives name, "(", arg, ")"
 	et = J(1, 0, .); ep = et; ec = et; names = J(1, 0, ""); covnames = J(1, 0, ""); setnames = J(1, 0, ""); distnames = J(1, 0, "")

@@ -1,6 +1,6 @@
 # TODO (nwalaam 0.3.0)
 
-Done: undirected (30) and directed (40) effects in the plugin, checked against their definitions; maximum pseudo-likelihood (= logit);
+Done: undirected (33) and directed (43) effects in the plugin, checked against their definitions; maximum pseudo-likelihood (= logit);
 stochastic approximation (default; agrees with the exact maximum likelihood) and the EE update of ALAAMEE; `nwalaam simulate`, `estat gof`,
 `estat mcmcdiag`; tests (see `RELEASING.md`); examples on Glasgow and Lazega.
 
