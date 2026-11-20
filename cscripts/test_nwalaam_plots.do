@@ -1,5 +1,32 @@
 * nwalaam result plots: estat gof (plot, distplot) and estat mcmcdiag (plot) with name(), saving(), export() and graph options; error paths.
 * Run from the repository root (cscripts/run_tests.sh). Writes its graph files to the scratch directory in c(tmpdir).
+cscript
+set graphics off
+local tmp0 `"`c(tmpdir)'"'
+* default pictures of the released version 1.2.0: identical PNG files (reference directory from NWALAAM_PLOT_REF, made by
+* cscripts/nwalaam_plots_defaults.do with the released package after `cscript`); the trace plots differ on purpose (dzA panels fixed)
+local ref : env NWALAAM_PLOT_REF
+if `"`ref'"' == "" {
+	di as text "  SKIPPED: default pictures vs released 1.2.0 (set NWALAAM_PLOT_REF)"
+}
+else {
+	global NWP_OUT `"`tmp0'/nwalaam_plots_defaults"'
+	do cscripts/nwalaam_plots_defaults.do
+	quietly checksum `"`ref'/gof.png"'
+	local c0 = r(checksum)
+	quietly checksum `"$NWP_OUT/gof.png"'
+	assert `c0' == r(checksum)
+	di as text "  PASS: default gof picture identical to the released 1.2.0"
+	foreach f in trace_sa trace_ee {
+		quietly checksum `"`ref'/`f'.png"'
+		local c0 = r(checksum)
+		quietly checksum `"$NWP_OUT/`f'.png"'
+		assert `c0' != r(checksum)
+	}
+	di as text "  PASS: the trace pictures differ from 1.2.0 (dzA panels fixed)"
+	clear
+	nwclear
+}
 set seed 123
 local tmp `"`c(tmpdir)'"'
 local out `"`tmp'/nwalaam_plots_test"'

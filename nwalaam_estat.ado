@@ -1,4 +1,4 @@
-*! version 1.2.0  19nov2026 nwalaam_estat
+*! version 1.3.0  20nov2026 nwalaam_estat
 * Copyright (C) 2026 Thomas U. Grund. Part of nwalaam; GNU GPL-3 (see LICENSE).
 
 capture program drop nwalaam_estat
@@ -28,10 +28,13 @@ program _nwalaam_gof, rclass
 	version 14
 	syntax [, EXTRA(string) NOEXtra NSIM(integer 1000) BURNin(string) INTERval(string) SEED(string) PLOT DISTplot NAME(string) SAVing(string) EXPort(string asis) ALL *]
 	local __gopts `"`options'"'
-	if ("`plot'" == "" & "`distplot'" == "") & (`"`saving'`export'`__gopts'"' != "" | "`name'" != "") {
-		di as error "name(), saving(), export() and graph options need plot or distplot"
-		exit 198
+	if "`plot'`distplot'" != "" | `"`name'"' != "" | `"`saving'"' != "" | `"`export'"' != "" | `"`__gopts'"' != "" {
+		_nwalaam_corecheck "estat gof, plot"
 	}
+	_nw_gfinish check, plot(`plot'`distplot') name(`name') saving(`saving') export(`export') gopts(`"`__gopts'"') cmd(estat gof)
+	local name `"`r(name)'"'
+	local saving `"`r(saving)'"'
+	local export `"`r(export)'"'
 	if "`plot'" != "" & "`distplot'" != "" & "`name'" != "" {
 		di as error "name() cannot be combined with both plot and distplot; use one at a time"
 		exit 198
@@ -146,13 +149,14 @@ program _nwalaam_gofplot
 		local lab `"`lab' `i' "`=stat[`i']'""'
 	}
 	if "`name'" == "" local name "nwalaam_gof"
-	local ttl `"title("Goodness of fit")"'
-	if strpos(`"`__opts'"', "title(") local ttl
+	* noblack: the plain title as in version 1.2.0 (the released picture does not change)
+	_nw_gfinish title "Goodness of fit", gopts(`"`__opts'"') noblack
+	local ttl `"`r(t)'"'
 	twoway (bar t pos if inmodel == 1, horizontal barwidth(0.7)) (bar t pos if inmodel == 0, horizontal barwidth(0.7)), ///
 		xline(-0.3 0.3, lpattern(dash)) ylabel(`lab', angle(0) valuelabel nogrid labsize(small)) yscale(reverse) ///
 		xtitle("Goodness-of-fit t-ratio") ytitle("") legend(order(1 "in the model" 2 "not in the model") rows(1)) ///
 		`ttl' name(`name', replace) `__opts'
-	_nwalaam_gfin `name', saving(`saving') export(`export')
+	_nw_gfinish save, name(`name') saving(`saving') export(`export')
 	restore
 end
 
@@ -175,6 +179,8 @@ program _nwalaam_gofdist
 	local graphs
 	forvalues k = 1/`K' {
 		local s : word `k' of `nm'
+		_nw_gfinish blk "`s'", size(medsmall)
+		local pt `"`r(t)'"'
 		quietly gen double v`k' = .
 		mata: st_store(., "v`k'", st_matrix("`S'")[., `k'])
 		local ob = `O'[1, `k']
@@ -184,32 +190,18 @@ program _nwalaam_gofdist
 		local nb = max(5, min(30, ceil(sqrt(`ns'))))
 		local disc = (r(max) - r(min) <= 40)
 		quietly twoway (histogram v`k', fcolor(gs13) lcolor(gs8) `=cond(`disc', "discrete", "bin(`nb')")' ///
-			xline(`ob', lcolor(red) lwidth(medthick))), title("`s'", size(medsmall)) xtitle("") ytitle("Density", size(small)) ///
+			xline(`ob', lcolor(red) lwidth(medthick))), `pt' xtitle("") ytitle("Density", size(small)) ///
 			legend(off) xlabel(, labsize(small)) ylabel(, labsize(small) angle(horizontal)) name(__nwalaam_gd`k', replace) nodraw
 		local graphs `graphs' __nwalaam_gd`k'
 	}
-	local ttl `"title("Goodness of fit: simulated statistics (red line: observed)")"'
-	if strpos(`"`__opts'"', "title(") local ttl
+	_nw_gfinish title "Goodness of fit: simulated statistics (red line: observed)", gopts(`"`__opts'"')
+	local ttl `"`r(t)'"'
 	graph combine `graphs', cols(`=min(3, `K')') `ttl' name(`name', replace) `__opts'
 	forvalues k = 1/`K' {
 		capture graph drop __nwalaam_gd`k'
 	}
-	_nwalaam_gfin `name', saving(`saving') export(`export')
+	_nw_gfinish save, name(`name') saving(`saving') export(`export')
 	restore
-end
-
-* writes the graph held under the name to saving() and export(), as the other nw packages do
-capture program drop _nwalaam_gfin
-program _nwalaam_gfin
-	syntax anything(name=gname) [, SAVing(string) EXPort(string asis)]
-	if `"`saving'"' != "" {
-		quietly graph save `gname' `"`saving'"', replace
-	}
-	if `"`export'"' != "" {
-		gettoken __fn __ex : export, parse(",")
-		local __ex = trim(substr(`"`__ex'"', 2, .))
-		quietly graph export `__fn', name(`gname') replace `__ex'
-	}
 end
 
 * estat mcmcdiag: convergence diagnostics of the equilibrium-expectation runs
@@ -217,10 +209,13 @@ capture program drop _nwalaam_mcmcdiag
 program _nwalaam_mcmcdiag, rclass
 	version 14
 	syntax [, PLOT NAME(string) SAVing(string) EXPort(string asis) RUN(integer 1) THRESHold(real 0.3) *]
-	if "`plot'" == "" & (`"`saving'`export'`options'"' != "" | "`name'" != "") {
-		di as error "name(), saving(), export() and graph options need plot"
-		exit 198
+	if "`plot'" != "" | `"`name'"' != "" | `"`saving'"' != "" | `"`export'"' != "" | `"`options'"' != "" {
+		_nwalaam_corecheck "estat mcmcdiag, plot"
 	}
+	_nw_gfinish check, plot(`plot') name(`name') saving(`saving') export(`export') gopts(`"`options'"') cmd(estat mcmcdiag)
+	local name `"`r(name)'"'
+	local saving `"`r(saving)'"'
+	local export `"`r(export)'"'
 	if !inlist("`e(method)'", "ee", "sa") {
 		di as err "{p 0 0 2}{bf:estat mcmcdiag} is only available after an equilibrium-expectation or stochastic-approximation fit; a {bf:mple} fit runs no simulation.{p_end}"
 		exit 498
@@ -307,13 +302,25 @@ program _nwalaam_traceplot
 		else local graphs `graphs' __nwalaam_g`k'b
 	}
 	if "`name'" == "" local name "nwalaam_trace"
-	local ttl `"title("`=cond("`dzonly'" == "", "Equilibrium-expectation trace of the first run", "Stochastic approximation: statistics of the final phase")'")"'
-	if strpos(`"`__opts'"', "title(") local ttl
+	* noblack: the plain title as in version 1.2.0 (the released picture does not change)
+	_nw_gfinish title "`=cond("`dzonly'" == "", "Equilibrium-expectation trace of the first run", "Stochastic approximation: statistics of the final phase")'", gopts(`"`__opts'"') noblack
+	local ttl `"`r(t)'"'
 	graph combine `graphs', cols(`=cond("`dzonly'" == "", 2, min(2, `k'))') `ttl' name(`name', replace) `__opts'
-	_nwalaam_gfin `name', saving(`saving') export(`export')
+	_nw_gfinish save, name(`name') saving(`saving') export(`export')
 	forvalues j = 1/`k' {
 		capture graph drop __nwalaam_g`j'a
 		capture graph drop __nwalaam_g`j'b
 	}
 	restore
+end
+
+* the plots need the shared graph helper of the core (nwcommands 3.29.0 or later); no local fallback
+capture program drop _nwalaam_corecheck
+program _nwalaam_corecheck
+	args what
+	capture _nw_gfinish version
+	if _rc | real("`r(api)'") < 1 {
+		di as err `"{p 0 0 2}`what' needs nwcommands (core) 3.29.0 or later (the installed core is older). Update: {stata ado update nwcommands:ado update nwcommands}, or run {bf:nwinstall}.{p_end}"'
+		exit 199
+	}
 end

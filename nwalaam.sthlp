@@ -1,5 +1,5 @@
 {smcl}
-{* *! version 1.2.0  19nov2026 author: Thomas Grund}{...}
+{* *! version 1.3.0  20nov2026 author: Thomas Grund}{...}
 {marker topic}
 {title:Title}
 
@@ -244,7 +244,7 @@ default, as in ALAAMEE, two-stars, three-stars, partner-activity two-paths, tria
 undirected networks and the sender, receiver, reciprocity, star, mixed star, contagion and triangle effects for directed ones;
 {opt noextra} none). A t-ratio beyond 0.3 in absolute value is marked. {opt plot} draws the t-ratios; {opt distplot} draws, for every statistic of the model ({opt all}: also the other statistics), the histogram of the simulated values with the observed value as a red line
 (not part of ALAAMEE). {opt name()} names the graph (default {cmd:nwalaam_gof} and {cmd:nwalaam_gofdist}), {opt saving()} saves it as a {cmd:.gph} file, {opt export()} exports it with {helpb graph export}
-(the extension of the file name sets the format), and further options go to {helpb twoway} ({opt plot}) or {helpb graph combine} ({opt distplot}). {cmd:r(gof)} holds the table
+(the extension of the file name sets the format), and further options go to {helpb twoway} ({opt plot}) or {helpb graph combine} ({opt distplot}); the plots need nwcommands (core) 3.29.0 or later. The titles of {opt distplot} are black; {opt title()} replaces the default title. {cmd:r(gof)} holds the table
 (observed, simulated mean, standard deviation, t-ratio), {cmd:r(mahalanobis)} the distance. The simulation can be misleading
 when the distribution of the outcome has two modes (all or none of the actors with the outcome, a common near-degeneracy of
 contagion models on small networks): the simulated mean statistics then lie between the modes and no t-ratio is small.
@@ -282,4 +282,4 @@ scalars {cmd:e(N)}, {cmd:e(n_ones)}, {cmd:e(nodes)}, {cmd:e(runs)}, {cmd:e(runs_
 {p 4 8 2}Stivala, A. 2023. Overcoming near-degeneracy in the autologistic actor attribute model. arXiv:2309.07338.{p_end}
 
 {hline}
-{pstd}{it:nwalaam version 1.2.0, 19 November 2026}{p_end}{* nwversion}
+{pstd}{it:nwalaam version 1.3.0, 20 November 2026}{p_end}{* nwversion}
