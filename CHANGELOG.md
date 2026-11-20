@@ -15,6 +15,8 @@ project uses [Semantic Versioning](https://semver.org/).
 
 The compiled plugin is the one of 1.2.0 (unchanged). The manual keeps its version.
 
+Tested on macOS with Stata 17 BE: the tests of the package including the new `test_nwalaam_patch131` (nwalaam has no dialog test). On Linux (Ubuntu 22.04) and Windows 11 (both StataNow 19.5 MP): all test files pass; on Linux the chapter ego model was also compared for seeds 1 to 30 against 1.3.0: `e(b)` identical to 15 digits, seed 111 now works. Stata 18 not run.
+
 ## [1.3.0] - 2026-11-20
 
 ### Added
