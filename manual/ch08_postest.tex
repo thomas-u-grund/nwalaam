@@ -2,7 +2,7 @@
 
 \section{Goodness of fit: estat gof}\label{sec:gof}
 
-\texttt{estat gof} simulates \opt{nsim()} outcome vectors (default 1000) from the fitted model and compares the statistics of the simulated vectors with the observed ones. For each statistic it reports the observed value, the mean and the standard deviation of the simulated values, and the t-ratio $(\text{simulated mean}-\text{observed})/\text{simulated standard deviation}$; the last line is the Mahalanobis distance of the observed statistics from the simulated ones (with the pseudo-inverse of the covariance matrix if it is singular). The statistics of the model come first: after a converged fit their t-ratios are near 0. Then come statistics that are not in the model (\opt{extra(list)}: any effects; the default, as in \alaamee{}, is the two-stars, three-stars, partner-activity two-paths, triangles, the indirect-partner and the partner-partner effects for undirected networks, and the sender, receiver, reciprocity, star, mixed-star, contagion and triangle effects for directed ones; \opt{noextra} gives none). A t-ratio beyond 0.3 in absolute value is marked. \opt{plot} draws the t-ratios. \texttt{r(gof)} holds the table (observed, simulated mean, standard deviation, t-ratio) and \texttt{r(mahalanobis)} the distance.
+\texttt{estat gof} simulates \opt{nsim()} outcome vectors (default 1000) from the fitted model and compares the statistics of the simulated vectors with the observed ones. For each statistic it reports the observed value, the mean and the standard deviation of the simulated values, and the t-ratio $(\text{simulated mean}-\text{observed})/\text{simulated standard deviation}$; the last line is the Mahalanobis distance of the observed statistics from the simulated ones (with the pseudo-inverse of the covariance matrix if it is singular). The statistics of the model come first: after a converged fit their t-ratios are near 0. Then come statistics that are not in the model (\opt{extra(list)}: any effects; the default, as in \alaamee{}, is the two-stars, three-stars, partner-activity two-paths, triangles, the indirect-partner and the partner-partner effects for undirected networks, and the sender, receiver, reciprocity, star, mixed-star, contagion and triangle effects for directed ones; \opt{noextra} gives none). A t-ratio beyond 0.3 in absolute value is marked. \texttt{r(gof)} holds the table (observed, simulated mean, standard deviation, t-ratio) and \texttt{r(mahalanobis)} the distance. Two plots are available, described in Section~\ref{sec:plots}.
 
 The Lazega fit fits well on the statistics that are not in the model:
 \showlog{lazega_diag}
@@ -16,7 +16,36 @@ Read such a table as a sign of two modes, not as lack of fit.
 
 \section{Convergence: estat mcmcdiag}
 
-\texttt{estat mcmcdiag} reports the convergence diagnostics of the fit. After \opt{method(sa)}: the estimate, the convergence statistic of each coefficient in the final phase (below $0.1$ in absolute value is converged) and the autocorrelation of the simulated differences. After \opt{method(ee)}: for each coefficient the mean and the standard deviation over the runs, the mean and the maximum convergence statistic, the number of runs beyond \opt{threshold()} and the lag-1 autocorrelation of the thinned values of the coefficient and of the differences. \opt{plot} draws the trace of the first EE run (coefficients and differences against the iteration) or the differences of the final phase of the stochastic approximation. It is not available after \opt{mple} (r(498)). Examples are in Sections~\ref{sec:first} and~\ref{sec:ee}.
+\texttt{estat mcmcdiag} reports the convergence diagnostics of the fit. After \opt{method(sa)}: the estimate, the convergence statistic of each coefficient in the final phase (below $0.1$ in absolute value is converged) and the autocorrelation of the simulated differences. After \opt{method(ee)}: for each coefficient the mean and the standard deviation over the runs, the mean and the maximum convergence statistic, the number of runs beyond \opt{threshold()} and the lag-1 autocorrelation of the thinned values of the coefficient and of the differences. \opt{plot} draws the trace of the first EE run (coefficients and differences against the iteration) or the differences of the final phase of the stochastic approximation (Section~\ref{sec:plots}). It is not available after \opt{mple} (r(498)). Examples are in Sections~\ref{sec:first} and~\ref{sec:ee}.
+
+\section{Plots}\label{sec:plots}
+
+Two plots belong to \texttt{estat gof} and one to \texttt{estat mcmcdiag}. They need the \texttt{nwcommands} core 3.29.0 or later (with an older core the plot stops with return code 199 and a message); the commands without a plot do not need it.
+
+\paragraph{Goodness of fit: t-ratios.} \opt{plot} draws the t-ratios of the table as a bar plot, the statistics of the model in one colour and the other statistics in another. The figure shows it for the karate club, after the fit of Section~\ref{sec:first} (the \opt{title("")} option removes the default title):
+\begin{lstlisting}
+. estat gof, nsim(1000) seed(7) plot title("") export(fig_gof.pdf)
+\end{lstlisting}
+\begin{figure}[ht]\centering\includegraphics[width=0.75\textwidth]{fig/fig_gof.pdf}
+\caption{\texttt{estat gof, plot} after the karate-club fit: t-ratios (all near $0.4$ because the distribution has two modes, see above).}\end{figure}
+
+\paragraph{Goodness of fit: distributions.} \opt{distplot} draws, for every statistic of the model, the histogram of the simulated values with the observed value as a red line; \opt{all} adds the other statistics of the table. It shows what a t-ratio hides: whether the observed value lies in the bulk of the simulated distribution, in its tail, or between two modes. This picture is an extension; \alaamee{} reports the t-ratios only.
+\begin{lstlisting}
+. estat gof, nsim(1000) seed(7) distplot export(fig_gofdist.pdf)
+\end{lstlisting}
+\begin{figure}[ht]\centering\includegraphics[width=\textwidth]{fig/fig_gofdist.pdf}
+\caption{\texttt{estat gof, distplot} for the karate club. The simulated values pile up near none and near all of the actors having the outcome (two modes); the observed values (red lines) lie between the modes, which is why all t-ratios are about $0.4$ although the estimate is the maximum likelihood estimate.}\end{figure}
+
+\paragraph{Convergence: traces.} After an equilibrium-expectation fit, \texttt{estat mcmcdiag, plot} draws the trace of the first run, with the coefficient in the left panel of each effect and the difference between the simulated and the observed statistic (\texttt{dzA}) in the right panel, against the iteration; the vertical dashed line marks the end of the burn-in. A coefficient that still drifts at the end of the run (the density coefficient in the figure) is a sign that more iterations are needed. After stochastic approximation the plot shows the differences of the final phase.
+\begin{lstlisting}
+. nwalaam faction karate, effects(density activity contagion) method(ee) seed(20261118)
+. estat mcmcdiag, plot title("") export(fig_trace.pdf)
+\end{lstlisting}
+\begin{figure}[ht]\centering\includegraphics[width=\textwidth]{fig/fig_trace.pdf}
+\caption{\texttt{estat mcmcdiag, plot} after \opt{method(ee)} on the karate club: trace of the first run.}\end{figure}
+
+\paragraph{Names, saving and graph options.} The plots follow one convention. \opt{name(name)} names the graph in memory; the defaults are \texttt{nwalaam\_gof} (\opt{plot}), \texttt{nwalaam\_gofdist} (\opt{distplot}) and \texttt{nwalaam\_trace} (\texttt{estat mcmcdiag}). \opt{saving(filename)} saves the graph as a \texttt{.gph} file, and \opt{export(filename)} exports it with \texttt{graph export}, the extension of the file name (\texttt{.pdf}, \texttt{.png}, \dots) setting the format; options of \texttt{graph export} may follow after a comma, as in \opt{export(fig.png, width(1600))}. \opt{saving()} and \opt{name()} accept a trailing \opt{, replace}. Any other graph option is passed on to \texttt{twoway} (\opt{plot}) or to \texttt{graph combine} (\opt{distplot} and the trace plot), for example \opt{title()}, \opt{xsize()} or \opt{scheme()}; the titles of the plots are black, and \opt{title()} replaces the default title. \opt{name()}, \opt{saving()}, \opt{export()} or a graph option without \opt{plot} (or \opt{distplot}) is an error (return code 198):
+\showlog{plots_err}
 
 \section{Simulation: nwalaam simulate}\label{sec:simulate}
 

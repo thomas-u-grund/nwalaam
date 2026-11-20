@@ -1,0 +1,55 @@
+. estat gof, nsim(1000) seed(7) plot title("") xsize(5) ysize(3) name(karate_gof) export(.
+> ./fig/fig_gof.pdf)
+
+Goodness of fit: 1,000 simulated outcome vectors from the fitted model (burn-in 10,000, in
+> terval 1,000)
+-------------------------------------------------------------
+      Statistic |   Observed  Sim. mean    Sim. SD    t-ratio
+----------------+--------------------------------------------
+        density |     18.000     23.214     11.700      0.446 *
+       activity |     80.000    107.202     61.116      0.445 *
+      contagion |     35.000     49.257     31.759      0.449 *
+----------------+--------------------------------------------
+not in the model: |
+        twostar |    271.000    365.839    230.323      0.412 *
+      threestar |    955.000   1227.289    797.177      0.342 *
+    alter2star1 |    566.000    723.088    395.010      0.398 *
+      triangle1 |     57.000     92.930     55.986      0.642 *
+    alter2star2 |    219.000    321.767    208.878      0.492 *
+partneractivity |    477.000    675.579    442.392      0.449 *
+ partnerpartner |    416.000    629.244    421.084      0.506 *
+      triangle2 |     55.000     87.871     57.246      0.574 *
+      triangle3 |     18.000     28.281     18.794      0.547 *
+-------------------------------------------------------------
+Mahalanobis distance of the observed statistics from the simulated ones:     9.083
+t-ratio = (simulated mean - observed) / simulated SD; * marks |t| > 0.3 (t-ratios of the
+statistics in the model should be near 0 after a converged fit; for the other
+statistics, values within about 0.3 indicate a good fit).
+
+. estat gof, nsim(1000) seed(7) distplot xsize(6.5) ysize(2.4) name(karate_dist) export(..
+> /fig/fig_gofdist.pdf)
+
+Goodness of fit: 1,000 simulated outcome vectors from the fitted model (burn-in 10,000, in
+> terval 1,000)
+-------------------------------------------------------------
+      Statistic |   Observed  Sim. mean    Sim. SD    t-ratio
+----------------+--------------------------------------------
+        density |     18.000     23.214     11.700      0.446 *
+       activity |     80.000    107.202     61.116      0.445 *
+      contagion |     35.000     49.257     31.759      0.449 *
+----------------+--------------------------------------------
+not in the model: |
+        twostar |    271.000    365.839    230.323      0.412 *
+      threestar |    955.000   1227.289    797.177      0.342 *
+    alter2star1 |    566.000    723.088    395.010      0.398 *
+      triangle1 |     57.000     92.930     55.986      0.642 *
+    alter2star2 |    219.000    321.767    208.878      0.492 *
+partneractivity |    477.000    675.579    442.392      0.449 *
+ partnerpartner |    416.000    629.244    421.084      0.506 *
+      triangle2 |     55.000     87.871     57.246      0.574 *
+      triangle3 |     18.000     28.281     18.794      0.547 *
+-------------------------------------------------------------
+Mahalanobis distance of the observed statistics from the simulated ones:     9.083
+t-ratio = (simulated mean - observed) / simulated SD; * marks |t| > 0.3 (t-ratios of the
+statistics in the model should be near 0 after a converged fit; for the other
+statistics, values within about 0.3 indicate a good fit).

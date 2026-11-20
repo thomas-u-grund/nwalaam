@@ -272,6 +272,13 @@ scalars {cmd:e(N)}, {cmd:e(n_ones)}, {cmd:e(nodes)}, {cmd:e(runs)}, {cmd:e(runs_
 
 
 {marker ref}{...}
+{title:Manual}
+
+{pstd}
+A user manual (PDF in the {cmd:manual} folder of the package source) is archived at Zenodo, {browse "https://doi.org/10.5281/zenodo.24397901":doi:10.5281/zenodo.24397901}, all versions. Please cite it by that address and report the package version printed by {cmd:nwalaam version}.
+{p_end}
+
+
 {title:References}
 
 {p 4 8 2}Borisenko, A., Byshkin, M., Lomi, A. 2019. A simple algorithm for scalable Monte Carlo inference. arXiv:1901.00533.{p_end}

@@ -6,8 +6,9 @@
 nwalaam outcome [network], effects(string) [options]
 nwalaam [, ci noci level(#) display_options]                (replay after a fit)
 nwalaam simulate [outcome [network]], {generate(stub) | frame(name)} [options]
-estat gof [, nsim(#) extra(list) noextra burnin(#) interval(#) seed(#) plot name(name)]
-estat mcmcdiag [, plot name(name) threshold(#)]
+estat gof [, nsim(#) extra(list) noextra burnin(#) interval(#) seed(#)
+           plot distplot all name(name) saving(filename) export(filename [, options]) graph_options]
+estat mcmcdiag [, threshold(#) plot name(name) saving(filename) export(filename [, options]) graph_options]
 nwalaam version
 \end{lstlisting}
 \emph{outcome} is a numeric variable of the dataset with the values 0 and 1 (missing allowed). \emph{network} is the network; it is optional, and the default is the current network. It may be undirected or directed, one-mode or two-mode; a valued network is used as binary (a tie where the value is not 0).
@@ -48,9 +49,10 @@ nwalaam version
 
 \begin{longtable}{@{}p{0.14\textwidth}p{0.82\textwidth}@{}}
 \toprule Code & Cause \\ \midrule \endhead
-198 & An option or effect is not recognized; the actors of the network do not each have exactly one row in the dataset; an effect that needs a covariate, a setting network or a distance matrix is given none; \opt{ci} and \opt{noci} together; \opt{zone()} does not hold the zones $0,1,\dots$ with every zone occurring. \\
+198 & An option or effect is not recognized; the actors of the network do not each have exactly one row in the dataset; an effect that needs a covariate, a setting network or a distance matrix is given none; \opt{ci} and \opt{noci} together; \opt{name()}, \opt{saving()}, \opt{export()} or a graph option of \texttt{estat gof} or \texttt{estat mcmcdiag} without \opt{plot} (or \opt{distplot}); \opt{zone()} does not hold the zones $0,1,\dots$ with every zone occurring. \\
 430 & The estimate cannot be computed: under \opt{mple}, the pseudo-likelihood estimate does not exist (perfect prediction or collinear effects; the karate club with the three effects above is an example, Section~\ref{sec:mple}); otherwise, the simulated statistics are collinear at the estimate, so the covariance matrix cannot be computed. \\
 450 & The outcome is not 0 or 1 (or missing). \\
+199 & The plots of \texttt{estat gof} and \texttt{estat mcmcdiag} are asked for and the \texttt{nwcommands} core is older than 3.29.0. \\
 498 & \texttt{estat mcmcdiag} after \opt{mple}: there is nothing to diagnose. \\
 601, 3495 & The plugin file is missing (601), or it is older than the package or cannot be loaded (3495). \\
 2000 & The outcome has no variation among the actors with a non-missing value. \\

@@ -46,5 +46,5 @@ All convergence t-ratios are within .3 in absolute value.
 largest difference between the two coefficient vectors: 0
 
 . timer list
-   1:     72.51 /        1 =      72.5070
-   2:     12.97 /        1 =      12.9680
+   1:     53.80 /        1 =      53.7950
+   2:      8.42 /        1 =       8.4230

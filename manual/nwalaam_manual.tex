@@ -29,13 +29,13 @@
 % the listing of the output of an example (manual/ex/out/<name>.txt, written by the do-files of manual/ex)
 \newcommand{\showlog}[1]{\lstinputlisting{ex/out/#1.txt}}
 \newcommand{\inc}[1]{\typeout{>>>#1}\input{#1}}
-\newcommand{\manualseries}{1.2}
-% The manual is labelled by the minor series (valid for 1.2.x): change \manualseries only for a new minor or major release whose documented behaviour changed.
+\newcommand{\manualseries}{1.3}
+% The manual is labelled by the minor series (valid for 1.3.x): change \manualseries only for a new minor or major release whose documented behaviour changed.
 \newcommand{\pkgversion}{1.3.0}
 \newcommand{\pkgdate}{20 November 2026}
 % Exact version and date of the release that produced the listings (written by tools/set_version.py; rerun the examples when it changes).
 % DOI of the archived manual (Zenodo). PLACEHOLDER: no record exists yet; put the all-versions DOI of the new record here (for example 10.5281/zenodo.NNNNNNN) after the upload and rebuild. Nothing is printed for an empty DOI.
-\newcommand{\manualdoi}{}% all-versions DOI of the Zenodo record: TO BE FILLED IN
+\newcommand{\manualdoi}{10.5281/zenodo.24397901}% DOI of the Zenodo record
 \newcommand{\citedoi}{\ifdefempty{\manualdoi}{}{ Zenodo. \url{https://doi.org/\manualdoi}}}
 \title{\textbf{nwalaam}\\[4pt]\large Autologistic actor attribute models in Stata\\ (a package that builds on \texttt{nwcommands})\\[6pt]\normalsize User manual and reference}
 \author{Thomas U. Grund\\ RWTH Aachen University}

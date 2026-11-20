@@ -28,7 +28,7 @@ The sampler and the change statistics are in a C plugin, \texttt{alaam\_sim}, th
 
 \section{Computing time}
 
-The time of a stochastic-approximation fit is proportional to the number of iterations, the proposals per iteration and the cost of one change statistic, which grows with the degree of the actors and the number of effects. For networks of a few hundred actors a fit takes seconds to a minute. An equilibrium-expectation fit with the default 30 runs of 50,000 iterations does the same amount of work as 30 chains of that length; with the default number of threads the runs are spread over the cores of the computer (Section~\ref{sec:threads}; the Lazega example, 30 runs, took 72 seconds with one thread and 13 with eight on the computer used for the examples, which was shared with other jobs).
+The time of a stochastic-approximation fit is proportional to the number of iterations, the proposals per iteration and the cost of one change statistic, which grows with the degree of the actors and the number of effects. For networks of a few hundred actors a fit takes seconds to a minute. An equilibrium-expectation fit with the default 30 runs of 50,000 iterations does the same amount of work as 30 chains of that length; with the default number of threads the runs are spread over the cores of the computer (Section~\ref{sec:threads}; the Lazega example, 30 runs, took 54 seconds with one thread and 8 with eight on the computer used for the examples, which was shared with other jobs).
 
 \section{Reproducibility and versions}
 

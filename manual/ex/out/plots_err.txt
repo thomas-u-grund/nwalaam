@@ -1,0 +1,5 @@
+. capture noisily estat gof, nsim(100) seed(7) export(never.pdf)
+estat gof: name(), saving(), export() and graph options need plot.
+
+. display "return code: " _rc
+return code: 198

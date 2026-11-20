@@ -4,11 +4,11 @@
 
 ## Bumping the version (one-line change)
 
-The manual's title and citation carry no version number; the title page states the series it describes (`\manualseries`, valid for 1.2.x). The exact version and date of the release that produced the listings are two more macros in `nwalaam_manual.tex`, written by `tools/set_version.py` together with the tag in the installation sentence of `ch01_intro.tex`:
+The manual's title and citation carry no version number; the title page states the series it describes (`\manualseries`, valid for 1.3.x). The exact version and date of the release that produced the listings are two more macros in `nwalaam_manual.tex`, written by `tools/set_version.py` together with the tag in the installation sentence of `ch01_intro.tex`:
 
-    \newcommand{\manualseries}{1.1}
-    \newcommand{\pkgversion}{1.1.1}
-    \newcommand{\pkgdate}{18 November 2026}
+    \newcommand{\manualseries}{1.3}
+    \newcommand{\pkgversion}{1.3.0}
+    \newcommand{\pkgdate}{20 November 2026}
 
 Change `\manualseries` only for a new minor or major release whose documented behaviour changed. For a patch release rebuild (`make -C manual pdf`) and rerun the examples if their output changed.
 

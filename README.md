@@ -29,3 +29,7 @@ by enumeration (the karate club), while the equilibrium-expectation update of AL
 Status: version 0.3.0, not released; a local repository without a remote. Tested on macOS with Stata 17. Linux and Windows plugins are
 built by `.github/workflows/build-plugins.yml` when the repository is published; until then they are not tested. See `help nwalaam`,
 `CHANGELOG.md`, `NOTICE.md` and `RELEASING.md`.
+
+## Manual
+
+A user manual (PDF in `manual/`, with the LaTeX source and the do-files of its examples) is archived at Zenodo: <https://doi.org/10.5281/zenodo.24397901> (all versions). Cite the manual by that address together with the package version printed by `nwalaam version`.

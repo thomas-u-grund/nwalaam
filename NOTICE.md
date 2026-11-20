@@ -30,5 +30,6 @@ specified the scope, reviewed the code, and is responsible for the package. Its 
 
 ## How to cite
 
-Grund, T. U. (2026). nwalaam: a Stata package (version 1.3.0).
+Grund, T. U. (2026). nwalaam: Autologistic actor attribute models in Stata. Manual. Zenodo. https://doi.org/10.5281/zenodo.24397901
+The DOI is the one of all versions of the manual. Please also report the exact version of the package that produced your results, as printed by `nwalaam version`.
 Please also cite the core package (Grund, T. U., nwcommands) and the ALAAMEE paper above.
