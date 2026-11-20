@@ -26,7 +26,16 @@ end
 capture program drop _nwalaam_gof
 program _nwalaam_gof, rclass
 	version 14
-	syntax [, EXTRA(string) NOEXtra NSIM(integer 1000) BURNin(string) INTERval(string) SEED(string) PLOT NAME(string) ALL]
+	syntax [, EXTRA(string) NOEXtra NSIM(integer 1000) BURNin(string) INTERval(string) SEED(string) PLOT DISTplot NAME(string) SAVing(string) EXPort(string asis) ALL *]
+	local __gopts `"`options'"'
+	if ("`plot'" == "" & "`distplot'" == "") & (`"`saving'`export'`__gopts'"' != "" | "`name'" != "") {
+		di as error "name(), saving(), export() and graph options need plot or distplot"
+		exit 198
+	}
+	if "`plot'" != "" & "`distplot'" != "" & "`name'" != "" {
+		di as error "name() cannot be combined with both plot and distplot; use one at a time"
+		exit 198
+	}
 	if `nsim' < 20 {
 		di as error "nsim() must be at least 20"
 		exit 198
@@ -97,7 +106,10 @@ program _nwalaam_gof, rclass
 	di as txt "Mahalanobis distance of the observed statistics from the simulated ones: " as res %9.3f `MAH'[1, 1]
 	di as txt "{p 0 0 2}t-ratio = (simulated mean - observed) / simulated SD; * marks |t| > 0.3 (t-ratios of the statistics in the model should be near 0 after a converged fit; for the other statistics, values within about 0.3 indicate a good fit).{p_end}"
 	if "`plot'" != "" {
-		_nwalaam_gofplot, res(`RES') p(`__P') name(`name')
+		_nwalaam_gofplot, res(`RES') p(`__P') name(`name') saving(`saving') export(`export') `__gopts'
+	}
+	if "`distplot'" != "" {
+		_nwalaam_gofdist, sim(`SIM') obs(`OBS') res(`RES') p(`__P') `all' name(`name') saving(`saving') export(`export') `__gopts'
 	}
 	return scalar nsim = `nsim'
 	return scalar seed = `__seed'
@@ -108,7 +120,8 @@ end
 
 capture program drop _nwalaam_gofplot
 program _nwalaam_gofplot
-	syntax, RES(name) P(integer) [NAME(string)]
+	syntax, RES(name) P(integer) [NAME(string) SAVing(string) EXPort(string asis) *]
+	local __opts `"`options'"'
 	preserve
 	tempname R
 	matrix `R' = `res'
@@ -132,20 +145,82 @@ program _nwalaam_gofplot
 	foreach i of local ps {
 		local lab `"`lab' `i' "`=stat[`i']'""'
 	}
-	local nopt
-	if "`name'" != "" local nopt name(`name', replace)
+	if "`name'" == "" local name "nwalaam_gof"
+	local ttl `"title("Goodness of fit")"'
+	if strpos(`"`__opts'"', "title(") local ttl
 	twoway (bar t pos if inmodel == 1, horizontal barwidth(0.7)) (bar t pos if inmodel == 0, horizontal barwidth(0.7)), ///
 		xline(-0.3 0.3, lpattern(dash)) ylabel(`lab', angle(0) valuelabel nogrid labsize(small)) yscale(reverse) ///
 		xtitle("Goodness-of-fit t-ratio") ytitle("") legend(order(1 "in the model" 2 "not in the model") rows(1)) ///
-		title("Goodness of fit") `nopt'
+		`ttl' name(`name', replace) `__opts'
+	_nwalaam_gfin `name', saving(`saving') export(`export')
 	restore
+end
+
+* estat gof, distplot: the simulated distribution of each statistic with the observed value (extension; ALAAMEE reports t-ratios only)
+capture program drop _nwalaam_gofdist
+program _nwalaam_gofdist
+	syntax, SIM(name) OBS(name) RES(name) P(integer) [ALL NAME(string) SAVing(string) EXPort(string asis) *]
+	local __opts `"`options'"'
+	tempname S O R
+	matrix `S' = `sim'
+	matrix `O' = `obs'
+	matrix `R' = `res'
+	local nm : rownames `R'
+	local K = cond("`all'" != "", rowsof(`R'), `p')
+	local ns = rowsof(`S')
+	if "`name'" == "" local name "nwalaam_gofdist"
+	preserve
+	clear
+	quietly set obs `ns'
+	local graphs
+	forvalues k = 1/`K' {
+		local s : word `k' of `nm'
+		quietly gen double v`k' = .
+		mata: st_store(., "v`k'", st_matrix("`S'")[., `k'])
+		local ob = `O'[1, `k']
+		quietly summarize v`k', meanonly
+		local lo = min(r(min), `ob')
+		local hi = max(r(max), `ob')
+		local nb = max(5, min(30, ceil(sqrt(`ns'))))
+		local disc = (r(max) - r(min) <= 40)
+		quietly twoway (histogram v`k', fcolor(gs13) lcolor(gs8) `=cond(`disc', "discrete", "bin(`nb')")' ///
+			xline(`ob', lcolor(red) lwidth(medthick))), title("`s'", size(medsmall)) xtitle("") ytitle("Density", size(small)) ///
+			legend(off) xlabel(, labsize(small)) ylabel(, labsize(small) angle(horizontal)) name(__nwalaam_gd`k', replace) nodraw
+		local graphs `graphs' __nwalaam_gd`k'
+	}
+	local ttl `"title("Goodness of fit: simulated statistics (red line: observed)")"'
+	if strpos(`"`__opts'"', "title(") local ttl
+	graph combine `graphs', cols(`=min(3, `K')') `ttl' name(`name', replace) `__opts'
+	forvalues k = 1/`K' {
+		capture graph drop __nwalaam_gd`k'
+	}
+	_nwalaam_gfin `name', saving(`saving') export(`export')
+	restore
+end
+
+* writes the graph held under the name to saving() and export(), as the other nw packages do
+capture program drop _nwalaam_gfin
+program _nwalaam_gfin
+	syntax anything(name=gname) [, SAVing(string) EXPort(string asis)]
+	if `"`saving'"' != "" {
+		quietly graph save `gname' `"`saving'"', replace
+	}
+	if `"`export'"' != "" {
+		gettoken __fn __ex : export, parse(",")
+		local __ex = trim(substr(`"`__ex'"', 2, .))
+		quietly graph export `__fn', name(`gname') replace `__ex'
+	}
 end
 
 * estat mcmcdiag: convergence diagnostics of the equilibrium-expectation runs
 capture program drop _nwalaam_mcmcdiag
 program _nwalaam_mcmcdiag, rclass
 	version 14
-	syntax [, PLOT NAME(string) RUN(integer 1) THRESHold(real 0.3)]
+	syntax [, PLOT NAME(string) SAVing(string) EXPort(string asis) RUN(integer 1) THRESHold(real 0.3) *]
+	if "`plot'" == "" & (`"`saving'`export'`options'"' != "" | "`name'" != "") {
+		di as error "name(), saving(), export() and graph options need plot"
+		exit 198
+	}
 	if !inlist("`e(method)'", "ee", "sa") {
 		di as err "{p 0 0 2}{bf:estat mcmcdiag} is only available after an equilibrium-expectation or stochastic-approximation fit; a {bf:mple} fit runs no simulation.{p_end}"
 		exit 498
@@ -197,8 +272,8 @@ program _nwalaam_mcmcdiag, rclass
 		if `run' != 1 {
 			di as txt "(only the trace of the first run is stored; run() ignored)"
 		}
-		if "`e(method)'" == "sa" _nwalaam_traceplot, trace(`TR1') p(`P') names(`names') thin(1) burnin(`=ceil(0.1*4*e(saiter))') name(`name') dzonly
-		else _nwalaam_traceplot, trace(`TR1') p(`P') names(`names') thin(`=e(thin)') burnin(`=e(burnin)') name(`name')
+		if "`e(method)'" == "sa" _nwalaam_traceplot, trace(`TR1') p(`P') names(`names') thin(1) burnin(`=ceil(0.1*4*e(saiter))') name(`name') saving(`saving') export(`export') dzonly `options'
+		else _nwalaam_traceplot, trace(`TR1') p(`P') names(`names') thin(`=e(thin)') burnin(`=e(burnin)') name(`name') saving(`saving') export(`export') `options'
 	}
 	return scalar runs_used = e(runs_used)
 	return scalar threshold = `threshold'
@@ -207,7 +282,8 @@ end
 
 capture program drop _nwalaam_traceplot
 program _nwalaam_traceplot
-	syntax, TRACE(name) P(integer) NAMES(string) THIN(integer) BURNin(integer) [NAME(string) DZONLY]
+	syntax, TRACE(name) P(integer) NAMES(string) THIN(integer) BURNin(integer) [NAME(string) SAVing(string) EXPort(string asis) DZONLY *]
+	local __opts `"`options'"'
 	preserve
 	tempname T
 	matrix `T' = `trace'
@@ -223,16 +299,18 @@ program _nwalaam_traceplot
 		quietly gen double dz`k' = .
 		forvalues i = 1/`ns' {
 			quietly replace th`k' = `T'[`i', `k'] in `i'
-			quietly replace dz`k' = `T'[`i', `P' + `k'] in `i'
+			quietly replace dz`k' = `T'[`i', `p' + `k'] in `i'
 		}
 		if "`dzonly'" == "" quietly twoway line th`k' it, title("`nm': coefficient", size(medsmall)) xtitle("iteration") ytitle("") xline(`burnin', lpattern(dash)) name(__nwalaam_g`k'a, replace) nodraw
 		quietly twoway line dz`k' it, title("`nm': dzA", size(medsmall)) xtitle("iteration") ytitle("") xline(`burnin', lpattern(dash)) yline(0) name(__nwalaam_g`k'b, replace) nodraw
 		if "`dzonly'" == "" local graphs `graphs' __nwalaam_g`k'a __nwalaam_g`k'b
 		else local graphs `graphs' __nwalaam_g`k'b
 	}
-	local nopt
-	if "`name'" != "" local nopt name(`name', replace)
-	graph combine `graphs', cols(`=cond("`dzonly'" == "", 2, min(2, `k'))') title("`=cond("`dzonly'" == "", "Equilibrium-expectation trace of the first run", "Stochastic approximation: statistics of the final phase")'") `nopt'
+	if "`name'" == "" local name "nwalaam_trace"
+	local ttl `"title("`=cond("`dzonly'" == "", "Equilibrium-expectation trace of the first run", "Stochastic approximation: statistics of the final phase")'")"'
+	if strpos(`"`__opts'"', "title(") local ttl
+	graph combine `graphs', cols(`=cond("`dzonly'" == "", 2, min(2, `k'))') `ttl' name(`name', replace) `__opts'
+	_nwalaam_gfin `name', saving(`saving') export(`export')
 	forvalues j = 1/`k' {
 		capture graph drop __nwalaam_g`j'a
 		capture graph drop __nwalaam_g`j'b

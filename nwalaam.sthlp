@@ -21,10 +21,10 @@
 {cmd:nwalaam simulate} [{it:outcome} [{it:netname}]]{cmd:,} {c -(}{opt gen:erate(stub)} | {opt fr:ame(name)}{c )-} [{opt eff:ects(list)} {opt theta(matname)} {opt nsim(#)} {opt burn:in(#)} {opt inter:val(#)} {opt seed(#)} {opt replace} {opt mode(#)} {opt zone(varname)} {opt sampl:er(zoo)}]
 
 {p 8 16 2}
-{cmd:estat gof} [{cmd:,} {opt nsim(#)} {opt extra(list)} {opt noex:tra} {opt burn:in(#)} {opt inter:val(#)} {opt seed(#)} {opt plot} {opt name(name)}]
+{cmd:estat gof} [{cmd:,} {opt nsim(#)} {opt extra(list)} {opt noex:tra} {opt burn:in(#)} {opt inter:val(#)} {opt seed(#)} {opt plot} {opt distplot} {opt all} {opt name(name)} {opt sav:ing(filename)} {opt exp:ort(filename [, options])} {it:graph_options}]
 
 {p 8 16 2}
-{cmd:estat mcmcdiag} [{cmd:,} {opt plot} {opt name(name)} {opt thresh:old(#)}]
+{cmd:estat mcmcdiag} [{cmd:,} {opt plot} {opt name(name)} {opt sav:ing(filename)} {opt exp:ort(filename [, options])} {it:graph_options} {opt thresh:old(#)}]
 
 {p 8 16 2}
 {cmd:nwalaam version}
@@ -242,7 +242,9 @@ distance of the observed statistics from the simulated ones (pseudo-inverse of t
 come first (their t-ratios should be near 0 after a converged fit), then statistics that are not in the model ({opt extra(list)}: any effects;
 default, as in ALAAMEE, two-stars, three-stars, partner-activity two-paths, triangles, indirect-partner and partner-partner effects for
 undirected networks and the sender, receiver, reciprocity, star, mixed star, contagion and triangle effects for directed ones;
-{opt noextra} none). A t-ratio beyond 0.3 in absolute value is marked. {opt plot} draws the t-ratios. {cmd:r(gof)} holds the table
+{opt noextra} none). A t-ratio beyond 0.3 in absolute value is marked. {opt plot} draws the t-ratios; {opt distplot} draws, for every statistic of the model ({opt all}: also the other statistics), the histogram of the simulated values with the observed value as a red line
+(not part of ALAAMEE). {opt name()} names the graph (default {cmd:nwalaam_gof} and {cmd:nwalaam_gofdist}), {opt saving()} saves it as a {cmd:.gph} file, {opt export()} exports it with {helpb graph export}
+(the extension of the file name sets the format), and further options go to {helpb twoway} ({opt plot}) or {helpb graph combine} ({opt distplot}). {cmd:r(gof)} holds the table
 (observed, simulated mean, standard deviation, t-ratio), {cmd:r(mahalanobis)} the distance. The simulation can be misleading
 when the distribution of the outcome has two modes (all or none of the actors with the outcome, a common near-degeneracy of
 contagion models on small networks): the simulated mean statistics then lie between the modes and no t-ratio is small.
@@ -256,7 +258,7 @@ contagion models on small networks): the simulated mean statistics then lie betw
 coefficient the mean and the standard deviation over the runs, the mean and maximum convergence t-ratio, the number of runs beyond the
 threshold ({opt threshold()}, default 0.3) and the lag-1 autocorrelation of the thinned values of the coefficient and of the differences. {opt plot} draws the
 trace of the first EE run (coefficients and differences against the iteration) or the differences of the final phase of the
-stochastic approximation. Not after {cmd:mple} (r(498)).
+stochastic approximation (default graph name {cmd:nwalaam_trace}; {opt saving()}, {opt export()} and graph options as for {cmd:estat gof}, passed to {helpb graph combine}). Not after {cmd:mple} (r(498)).
 
 
 {marker results}{...}

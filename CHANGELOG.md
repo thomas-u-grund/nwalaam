@@ -3,6 +3,15 @@
 All notable changes to nwalaam are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project uses [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- `estat gof, distplot` draws the histogram of the simulated values of every statistic of the model (`all`: every statistic of the table) with the observed value as a red line. ALAAMEE reports the t-ratios only; this is an extension.
+- `saving()`, `export()` and graph options for the plots of `estat gof` and `estat mcmcdiag`; the plots have the default names `nwalaam_gof`, `nwalaam_gofdist` and `nwalaam_trace`. `name()`, `saving()`, `export()` or graph options without a plot option are an error (r(198)).
+
+### Fixed
+- `estat mcmcdiag, plot` drew the wrong columns of the stored trace in the panels of the differences dzA (after `method(sa)` the panels were empty, after `method(ee)` they repeated the coefficient trace).
+
 ## [1.2.0] - 2026-11-19
 
 ### Added
