@@ -18,3 +18,7 @@ The independent EE runs (`method(ee)`, plugin code 22) run in threads (pthreads 
 - No Stata plugin interface call (`SF_*`) from a worker thread: workers only fill their own part of a buffer, and the calling thread writes the buffer to the frame variable after all threads have finished.
 - Every run has its own generator (seed + 1000003 x run number) and its own scratch memory (`Model.cnt` is copied per run), so the result is the same for every number of threads (`test_nwalaam_threads.do`). New state that the samplers write to must be per run, never global (the old global `cur_rng` was removed for this reason).
 - The Linux build needs `-pthread` (Makefile); the Windows build (`cl /LD`, multithreaded CRT by default) needs nothing extra. SA, `simulate` and `estat gof` follow one chain each and stay single-threaded, because splitting a chain would change the results; the book examples print numbers from them.
+
+## Plots
+
+- A `syntax` option `P(integer)` is the local `p`, not `P`: `matrix[`i', `P' + `k']` read column `k` of the trace matrix (the coefficient columns, missing after `method(sa)`), so the dzA panels of `estat mcmcdiag, plot` were empty or repeated the coefficient trace until 1.2.x; use the lower-case name in the program that receives the option.
