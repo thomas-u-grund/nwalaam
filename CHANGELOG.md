@@ -3,6 +3,18 @@
 All notable changes to nwalaam are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project uses [Semantic Versioning](https://semver.org/).
 
+## [1.3.1] - 2026-11-20
+
+### Fixed
+- A missing value in a covariate of an effect (`ego(x)`, `alter(x)` and the other covariate effects) was silently counted as 0 in the statistics. The fit now stops with r(416), naming the variable and the number of missing values. Fits whose covariates have no missing values are unchanged.
+- The stochastic approximation stopped with r(430) ("diverged") for some seeds although other seeds of the same model converge (the book's smoking model with `ego(alc_c) ego(sport_c)`, seed 111). Cause: the start of Algorithm S can contain a huge negative coefficient (-3e25 for a centred covariate whose statistic is nearly 0), because the plugin limits only the upward step; every repetition then began from that start and diverged. The command now restarts from the same start limited to -10 to 10 and, if needed, from zero; `e(b_start)` shows the start used. The estimates of every seed that converged before are unchanged (checked for seeds 1 to 30 of that model, coefficient by coefficient to 15 digits). The error message for a fit that still diverges advises another `seed()`.
+
+### Changed
+- Self-loops of a one-mode network were ignored without a word; the command now prints a one-line note with their number (the statistics are unchanged).
+- Help: states the missing-covariate rule, the self-loop rule and the starting values; the comparison of `method(ee)` with the exact maximum likelihood estimate is given as measured in checks on small networks (estimates up to 0.5 standard errors from the exact ones, standard errors 0.7 to 1.2 times the exact ones).
+
+The compiled plugin is the one of 1.2.0 (unchanged). The manual keeps its version.
+
 ## [1.3.0] - 2026-11-20
 
 ### Added

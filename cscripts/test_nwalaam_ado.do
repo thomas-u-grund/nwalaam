@@ -126,7 +126,9 @@ di as text "  PASS: seed()"
 nwalaam y2 karate, effects(density contagion ego(cc) gwactivity(0.5) same(class)) `fast' seed(1)
 assert e(N) == 32
 assert "`e(effects)'" == "density contagion ego_cc gwactivity_0p5 same_class"
-nwalaam y2 karate, effects(density contagion ego(ccmiss) alter(cc) diff(class) samecontagion(class)) `fast' seed(1)
+capture nwalaam y2 karate, effects(density contagion ego(ccmiss) alter(cc) diff(class) samecontagion(class)) `fast' seed(1)
+assert _rc == 416
+nwalaam y2 karate, effects(density contagion ego(cc) alter(cc) diff(class) samecontagion(class)) `fast' seed(1)
 nwalaam faction karate, effects(density gwactivity gwcontagion logcontagion powercontagion(3)) `fast' seed(1)
 assert "`: colnames e(b)'" == "density gwactivity gwcontagion logcontagion powercontagion_3"
 foreach set in "density triangle1 alter2star1" "density twostar partneractivity" "density triangle3 alter2star2" "density threestar triangle2" "density partnerpartner" {

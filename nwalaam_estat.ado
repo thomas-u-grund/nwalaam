@@ -1,4 +1,4 @@
-*! version 1.3.0  20nov2026 nwalaam_estat
+*! version 1.3.1  20nov2026 nwalaam_estat
 * Copyright (C) 2026 Thomas U. Grund. Part of nwalaam; GNU GPL-3 (see LICENSE).
 
 capture program drop nwalaam_estat

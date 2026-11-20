@@ -1,4 +1,4 @@
-*! version 1.3.0  20nov2026 nwalaam
+*! version 1.3.1  20nov2026 nwalaam
 * Copyright (C) 2026 Thomas U. Grund
 * This file is part of nwalaam, a Stata package for autologistic actor attribute models (ALAAMs). It follows the
 * method of the ALAAMEE software (Stivala, Wang and Lomi; MIT licence) and is written independently.
@@ -76,6 +76,7 @@ program nwalaam, eclass
 	local netname = trim("`netname'")
 	_nwalaam_prep `depvar' `netname', effects(`effects') mode(`mode') zone(`zone') sampler(`sampler')
 	local __P : word count `__names'
+	if `__nloops' > 0 di as text "{p 0 6 2}Note: the network `netname' has `__nloops' self-loop(s); they are ignored.{p_end}"
 	// start values: given as a 1 x P matrix, or (default) from Algorithm S
 	if "`start'" != "" {
 		capture confirm matrix `start'
@@ -127,7 +128,7 @@ program nwalaam, eclass
 	ereturn post `B' `V', obs(`__ny')
 	ereturn local cmd "nwalaam"
 	ereturn local estat_cmd "nwalaam_estat"
-	ereturn local version "1.3.0"
+	ereturn local version "1.3.1"
 	ereturn local depvar "`depvar'"
 	ereturn local network "`netname'"
 	ereturn local effects "`__names'"

@@ -656,41 +656,53 @@ void AlaamSA(class AlaamNat scalar N, real scalar P, real rowvector zobs, real r
 		real scalar saiter, real scalar s0, real scalar seed, real matrix dg, string scalar mb, string scalar mV, string scalar mdiag,
 		string scalar mrun, string scalar mtrace)
 {
-	real scalar rep, n3, ok, drop, nr
-	real rowvector theta, tr
+	real scalar rep, n3, ok, drop, nr, stage, valid
+	real rowvector theta, tr, th0
 	real matrix R, DZ, C, TR
 	real colvector sdv
 
 	n3 = 4 * saiter
-	theta = theta0
 	ok = 0
-	for (rep = 1; rep <= 20; rep++) {
-		nr = (2 + n3) * P
-		R = N.call("21 " + strofreal(N.L, "%18.0f") + " " + strofreal(seed + 7919 * rep + s0, "%18.0f") + " " + strofreal(mprop) + " " + strofreal(saiter) + " " +
-			strofreal(saiter) + " 4 " + strofreal(n3) + " 0.25" + " " + invtokens(strofreal(theta, "%25.17g")), nr)
-		R = rowshape(R', 2 + n3)
-		theta = R[1, .]
-		if (hasmissing(theta) | max(abs(theta)) > 1e10) {
-			// diverged: restart from the pseudo-likelihood-free start with smaller gain
-			theta = theta0
-			gain = gain / 2
-			continue
-		}
-		DZ = R[3::(2 + n3), .]
-		drop = ceil(n3 / 10)
-		DZ = DZ[(drop + 1)::n3, .]
-		sdv = sqrt(diagonal(variance(DZ)))
-		tr = (mean(DZ)' :/ sdv)'
-		if (max(abs(tr)) < 0.1) {
-			ok = 1
-			break
+	valid = 0
+	// Stage 1 is the start given (Algorithm S or start()). Algorithm S can return a wild start (a coefficient of -1e25 when the
+	// statistic of a centred covariate is nearly zero), from which every repetition diverges; then stage 2 restarts from the same
+	// start limited to [-10, 10] (the largest value Algorithm S itself reaches upwards) and stage 3 from zero.
+	for (stage = 1; stage <= 3 & !valid; stage++) {
+		th0 = theta0
+		if (stage == 2) th0 = colmax((colmin((theta0 \ J(1, P, 10))) \ J(1, P, -10)))
+		if (stage == 3) th0 = J(1, P, 0)
+		if (stage == 2 & th0 == theta0) continue
+		theta = th0
+		for (rep = 1; rep <= 20; rep++) {
+			nr = (2 + n3) * P
+			R = N.call("21 " + strofreal(N.L, "%18.0f") + " " + strofreal(seed + 7919 * rep + s0, "%18.0f") + " " + strofreal(mprop) + " " + strofreal(saiter) + " " +
+				strofreal(saiter) + " 4 " + strofreal(n3) + " 0.25" + " " + invtokens(strofreal(theta, "%25.17g")), nr)
+			R = rowshape(R', 2 + n3)
+			theta = R[1, .]
+			if (hasmissing(theta) | max(abs(theta)) > 1e10) {
+				// diverged: restart from the start of this stage with another seed
+				theta = th0
+				valid = 0
+				continue
+			}
+			valid = 1
+			DZ = R[3::(2 + n3), .]
+			drop = ceil(n3 / 10)
+			DZ = DZ[(drop + 1)::n3, .]
+			sdv = sqrt(diagonal(variance(DZ)))
+			tr = (mean(DZ)' :/ sdv)'
+			if (max(abs(tr)) < 0.1) {
+				ok = 1
+				break
+			}
 		}
 	}
-	if (hasmissing(theta) | max(abs(theta)) > 1e10) {
+	if (!valid) {
 		N.close()
-		errprintf("{p 0 0 2}nwalaam: the stochastic approximation diverged (the model may be degenerate for this network; try fewer effects, or a smaller lrate()).{p_end}\n")
+		errprintf("{p 0 0 2}nwalaam: the stochastic approximation diverged (the model may be degenerate for this network; try fewer effects, a different {bf:seed()} or a smaller {bf:lrate()}).{p_end}\n")
 		exit(430)
 	}
+	if (th0 != theta0) dg[., 3] = th0'
 	// information matrix = covariance of the statistics at the estimate (sample covariance of the stationary draws; the batch-means
 	// long-run covariance would add the autocorrelation of the chain)
 	C = variance(DZ)

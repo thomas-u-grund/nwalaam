@@ -1,4 +1,4 @@
-*! version 1.3.0  20nov2026 _nwalaam_prep
+*! version 1.3.1  20nov2026 _nwalaam_prep
 * Copyright (C) 2026 Thomas U. Grund. Part of nwalaam; GNU GPL-3 (see LICENSE).
 * reads the data of a fit into Mata objects (__nwalaam_*): outcome, covariates, the effects (and extra effects appended, for goodness of fit)
 capture program drop _nwalaam_prep
@@ -136,7 +136,17 @@ program _nwalaam_prep
 			error 198
 		}
 		mata: __nwalaam_cov = (__nwalaam_cov \ alaam_pull(__nwalaam_rows, "`__v'")')
+		// a missing covariate value is an error (it would otherwise be counted as 0 by the statistics)
+		mata: st_local("__cmiss", strofreal(sum((__nwalaam_cov[rows(__nwalaam_cov), .]' :>= .) :& __nwalaam_mo)))
+		if `__cmiss' > 0 {
+			capture mata: mata drop __nwalaam_*
+			di as error "{p 0 0 2}the covariate {bf:`__v'} has `__cmiss' missing value(s) among the `__nm' actors; the effects cannot use missing covariate values. Impute them or recode them, for example to the mean for a centred covariate, before the estimation.{p_end}"
+			error 416
+		}
 	}
+	// self-loops of a one-mode network are ignored by the statistics
+	local __nloops 0
+	if !`__two' mata: st_local("__nloops", strofreal(sum((diagonal(__nwalaam_adj) :!= 0) :& (diagonal(__nwalaam_adj) :< .))))
 	// setting networks and distance matrices of the effects
 	mata: st_local("__sets", invtokens(__nwalaam_sn))
 	local __k 0
@@ -201,6 +211,7 @@ program _nwalaam_prep
 	c_local nodes `nodes'
 	c_local __dir `__dir'
 	c_local __ny `__ny'
+	c_local __nloops `__nloops'
 	c_local __ny1 `__ny1'
 end
 

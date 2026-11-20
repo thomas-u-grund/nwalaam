@@ -12,6 +12,8 @@
 - **Stochastic approximation needs a damped derivative matrix.** From the Algorithm S start the covariance of the simulated statistics can be that of a single state (the chain does not move), and the full Newton step diverges (theta of 500 and more). The plugin shrinks the off-diagonal elements by 30 percent, floors the variances and caps the largest change of a coefficient at 0.25 per iteration.
 - **Mata `tbl = (a \ b \ ... )` with more than about 50 string elements stops with "too many tokens"**: build long tables in chunks (`tbl = tbl \ (...)`).
 - **A running Stata that has loaded the plugin is killed by macOS when the plugin file is rebuilt in place**: `rm` the plugin before copying; the Makefile writes through `lipo`, so do not rebuild while a test runs.
+- **Algorithm S can return a wild start** (plugin code 12, `native/alaam_sim.c` near line 873: the step is capped at +0.1 but not at -0.1, so a nearly zero statistic of a centred covariate gives -3e25). Wild starts also occur for seeds that converge (seed 6 and 20 of the glasgow smoking model start at 400 and 1800), so the start must NOT be limited in general: that would change the results of converged seeds. `AlaamSA()` limits it to [-10, 10] (then zero) only after every repetition diverged. A symmetric cap in the plugin would change many results; not done.
+- **A missing covariate value was counted as 0** until 1.3.1; `_nwalaam_prep` now stops with r(416). The change-statistic tests against ALAAMEE still use missing values (Mata level, not through the command).
 
 ## Threads in the plugin (1.1.0)
 The independent EE runs (`method(ee)`, plugin code 22) run in threads (pthreads on macOS and Linux, `_beginthreadex` on Windows). Rules that keep it correct:

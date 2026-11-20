@@ -1,5 +1,5 @@
 {smcl}
-{* *! version 1.3.0  20nov2026 author: Thomas Grund}{...}
+{* *! version 1.3.1  20nov2026 author: Thomas Grund}{...}
 {marker topic}
 {title:Title}
 
@@ -35,6 +35,9 @@ never changed by the sampler and count as 0 in every statistic), one row per act
 (variable {cmd:_nwnode}, as after {helpb nwload} with {cmd:xvars}) the rows are matched to the actors by label; otherwise the
 dataset must have one row per actor, in actor order. {it:netname} is the network (default: the current network); it may be
 undirected or directed, one-mode, or a two-mode network (see {help nwalaam##twomode:Two-mode networks}). Valued networks are used as binary (a tie where the value is not 0).
+Self-loops of a one-mode network are ignored by the statistics; the command prints a one-line note when the network has some.
+Covariates named in an effect such as {cmd:ego(}{it:var}{cmd:)} must not have missing values for any actor (of the level of the outcome, for a two-mode network): otherwise
+the command stops with error 416 and names the variable and the number of missing values. Impute or recode them first (for a centred covariate, the mean is 0).
 
 {synoptset 24 tabbed}{...}
 {synopthdr}
@@ -92,7 +95,7 @@ and the number of the run, and its own memory, so the estimates, the standard er
 and the default. Stochastic approximation, {cmd:mple}, {cmd:simulate} and {cmd:estat gof} follow one chain each and use one thread.
 
 {pstd}
-{bf:Which estimator.} Stochastic approximation gives standard errors that agree with the exact ones. The equilibrium-expectation standard errors can be too small on larger networks (check them against a parametric bootstrap before relying on them). The two estimators also differ in the estimates: where the
+{bf:Which estimator.} Stochastic approximation gives standard errors that agree with the exact ones. In checks on small networks, where the exact maximum likelihood estimate can be computed by enumeration, the equilibrium-expectation estimates were up to 0.5 standard errors away from the exact estimates and its standard errors were between 0.7 and 1.2 times the exact ones; on larger networks they can be too small (check them against a parametric bootstrap before relying on them). The two estimators also differ in the estimates: where the
 exact maximum likelihood estimate can be computed by enumerating all outcome vectors, stochastic approximation reproduces it,
 while the equilibrium-expectation update stops at slightly different values. On the karate club (34 actors; Density, Activity and Contagion
 with the faction as outcome) the exact estimates are 0.535, -0.832 and 1.461; stochastic approximation gives 0.52, -0.83, 1.46 and the
@@ -101,6 +104,11 @@ errors; on a random network of 16 actors the equilibrium-expectation estimates l
 that reason stochastic approximation is the default; {cmd:method(ee)} reproduces ALAAMEE and is the choice when results are to be compared with it.
 The pseudo-likelihood estimate ({cmd:mple}) treats the log odds of each actor as independent and its standard errors are too small; use it
 for starting values and for a quick look.
+
+{pstd}
+{bf:Starting values and divergence.} The default start is the one of Snijders' Algorithm S (a short simulation). In rare cases it returns very large values (when the statistic of a
+centred covariate is close to 0), and the stochastic approximation then diverges. The command then restarts from the same start limited to the range -10 to 10, and
+if needed from zero; the start used is in {cmd:e(b_start)}. If it still diverges it stops with error 430; try another {opt seed()}, fewer effects or a smaller {opt lrate()}. {cmd:start(}{it:matname}{cmd:)} gives the start by hand.
 
 {pstd}
 All computing is done in a compiled plugin; there is no slower fallback (error 601: plugin missing; 3495: plugin too old).
@@ -289,4 +297,4 @@ A user manual (PDF in the {cmd:manual} folder of the package source) is archived
 {p 4 8 2}Stivala, A. 2023. Overcoming near-degeneracy in the autologistic actor attribute model. arXiv:2309.07338.{p_end}
 
 {hline}
-{pstd}{it:nwalaam version 1.3.0, 20 November 2026}{p_end}{* nwversion}
+{pstd}{it:nwalaam version 1.3.1, 20 November 2026}{p_end}{* nwversion}
