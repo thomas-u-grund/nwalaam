@@ -15,6 +15,8 @@ project uses [Semantic Versioning](https://semver.org/).
 ### Fixed
 - `estat mcmcdiag, plot` drew the wrong columns of the stored trace in the panels of the differences dzA (after `method(sa)` the panels were empty, after `method(ee)` they repeated the coefficient trace).
 
+Tested on macOS with Stata 17 BE (plot test, ado test and threshold test, against core 3.29.0); on Linux and on Windows with StataNow 19.5 MP (the plot test and the package tests of this version). Stata 18 on the Mac was not run for this version. The compiled plugin is the one of 1.2.0 (unchanged).
+
 ## [1.2.0] - 2026-11-19
 
 ### Added
