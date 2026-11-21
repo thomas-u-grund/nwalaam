@@ -1,5 +1,5 @@
 {smcl}
-{* *! version 1.3.1  20nov2026 author: Thomas Grund}{...}
+{* *! version 1.4.0  21nov2026 author: Thomas Grund}{...}
 {marker topic}
 {title:Title}
 
@@ -106,8 +106,9 @@ The pseudo-likelihood estimate ({cmd:mple}) treats the log odds of each actor as
 for starting values and for a quick look.
 
 {pstd}
-{bf:Starting values and divergence.} The default start is the one of Snijders' Algorithm S (a short simulation). In rare cases it returns very large values (when the statistic of a
-centred covariate is close to 0), and the stochastic approximation then diverges. The command then restarts from the same start limited to the range -10 to 10, and
+{bf:Starting values and divergence.} The default start is the one of Snijders' Algorithm S (a short simulation, 100 iterations) whose step for every coefficient is limited to the range -0.1 to 0.1, so
+that the start stays moderate. (The ALAAMEE program limits only the upward step; the symmetric limit is a deliberate difference of this package.) Should the stochastic approximation
+still diverge, the command restarts from the same start limited to the range -10 to 10, and
 if needed from zero; the start used is in {cmd:e(b_start)}. If it still diverges it stops with error 430; try another {opt seed()}, fewer effects or a smaller {opt lrate()}. {cmd:start(}{it:matname}{cmd:)} gives the start by hand.
 
 {pstd}
@@ -297,4 +298,4 @@ A user manual (PDF in the {cmd:manual} folder of the package source) is archived
 {p 4 8 2}Stivala, A. 2023. Overcoming near-degeneracy in the autologistic actor attribute model. arXiv:2309.07338.{p_end}
 
 {hline}
-{pstd}{it:nwalaam version 1.3.1, 20 November 2026}{p_end}{* nwversion}
+{pstd}{it:nwalaam version 1.4.0, 21 November 2026}{p_end}{* nwversion}

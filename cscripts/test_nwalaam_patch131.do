@@ -102,7 +102,7 @@ matrix b1 = e(b)
 forvalues j = 1/6 {
 	assert abs(b111[1,`j'] - b1[1,`j']) < 0.25
 }
-* the seeds that converged before give the estimates of 1.3.0 (seed 1, 4 digits)
-assert abs(b1[1,1] - (-1.23734)) < 1e-4 & abs(b1[1,5] - 1.85765) < 1e-4
-di as text "PASS: seed 111 converges; seed 1 unchanged"
+* seed 1 gave -1.23734 and 1.85765 in 1.3.x; since 1.4.0 (symmetric Algorithm S step cap) it differs by Monte-Carlo noise only
+assert abs(b1[1,1] - (-1.23734)) < 0.05 & abs(b1[1,5] - 1.85765) < 0.05
+di as text "PASS: seed 111 converges; seed 1 within Monte-Carlo noise of 1.3.x"
 di "test_nwalaam_patch131: ALL OK"

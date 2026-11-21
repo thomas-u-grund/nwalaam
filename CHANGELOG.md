@@ -3,6 +3,16 @@
 All notable changes to nwalaam are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project uses [Semantic Versioning](https://semver.org/).
 
+## [1.4.0] - 2026-11-21
+
+### Changed
+- Algorithm S (the default starting values of `method(sa)`) now limits the step of every coefficient to -0.1 to +0.1. Before, only the upward step was limited, so a nearly zero statistic of a centred covariate gave a huge negative start (-3e25 for seed 111 of the book's smoking model; starts of 400 to 1,800 for seeds 6, 16 and 20). The ALAAMEE program (Stivala et al., `initialEstimator.py`) limits only the upward step; the symmetric limit is a deliberate difference of this package.
+- Stochastic-approximation estimates for the same seed therefore change slightly (the starts differ, so the simulated chain differs). For the book's smoking model, seeds 1 to 30 and 111: largest change of a coefficient per seed 0.0045 to 0.057, every seed changes by more than 0.001; the mean over the seeds is unchanged to 0.002, the spread between seeds is the same or smaller, all seeds converge, and the repetitions fall from 39 to 31 (seeds 6, 16, 20, 21, 27 and 29 no longer need a second to fourth repetition). For the karate club (30 seeds): changes 0.001 to 0.026, no change in the mean. On the 16-actor network of the exact check the estimates are unchanged. Estimates remain Monte-Carlo estimates: use `seed()` as before to reproduce a result, but results of 1.3.x with a given seed are not reproduced exactly.
+- The restart of 1.3.1 (limited start, then zero start) is kept as a second line of defence.
+- Help: the starting values.
+
+The compiled plugin changed (macOS, Linux and Windows).
+
 ## [1.3.1] - 2026-11-20
 
 ### Fixed

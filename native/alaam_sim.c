@@ -872,6 +872,7 @@ STDLL stata_call(int argc, char *argv[]) {
 						if (sc != 0.0) da = 0.1 / (sc * sc);
 						step = (dz > 0 ? 1.0 : (dz < 0 ? -1.0 : 0.0)) * da * dz * dz;
 						if (step > 0.1) step = 0.1;
+						if (step < -0.1) step = -0.1;   /* symmetric cap (ALAAMEE caps only the upward step; see CHANGELOG 1.4.0) */
 						theta[e] += step;
 					}
 				}

@@ -1,4 +1,4 @@
-*! version 1.3.1  20nov2026 _nwalaam_simulate
+*! version 1.4.0  21nov2026 _nwalaam_simulate
 * Copyright (C) 2026 Thomas U. Grund. Part of nwalaam; GNU GPL-3 (see LICENSE).
 * nwalaam simulate: draws outcome vectors from the model (after a fit, or from given coefficients)
 capture program drop _nwalaam_simulate
