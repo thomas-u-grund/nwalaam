@@ -19,6 +19,10 @@ program nwalaam, eclass
 		_nwalaam_simulate `__rest'
 		exit
 	}
+	if `"`__w1'"' == "bootstrap" {
+		_nwalaam_bootstrap `__rest'
+		exit
+	}
 	if replay() {
 		capture _nwalaam_tabopts __t check `0'
 		if !_rc {

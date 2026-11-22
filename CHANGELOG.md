@@ -5,8 +5,11 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- `nwalaam bootstrap, reps(#)`: parametric bootstrap after a fit. Draws outcome vectors from the fitted model (as `nwalaam simulate`), refits each with the same method and effects from the fitted coefficients, and reports model SE, bootstrap SD, bias and percentile interval; failed refits are counted, `e()` and the data are untouched; `r(b_boot)`, `r(sd_boot)`, `r(V_boot)`, `r(ci_boot)`, `r(bias_boot)`, `r(nfail)`; `saving()` writes the refits to a dataset. New test `cscripts/test_nwalaam_bootstrap.do`.
+
 ### Help
-- States the limits of `method(ee)` and `mple`: the equilibrium-expectation estimates and standard errors on very small networks and its standard errors on a large one, the pseudo-likelihood estimate (standard errors too small, no estimate under separation, r(430)), the advice to report stochastic approximation, and that the package has no option for bootstrap standard errors or the exact likelihood (a parametric bootstrap by hand with `nwalaam simulate`).
+- States the limits of `method(ee)` and `mple`: the equilibrium-expectation estimates and standard errors on very small networks and its standard errors on a large one, the pseudo-likelihood estimate (standard errors too small, no estimate under separation, r(430)), the advice to report stochastic approximation, and and that the package has no option for the exact likelihood.
 
 ## [1.3.1] - 2026-11-20
 

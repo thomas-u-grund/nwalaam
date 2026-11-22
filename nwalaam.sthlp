@@ -21,6 +21,9 @@
 {cmd:nwalaam simulate} [{it:outcome} [{it:netname}]]{cmd:,} {c -(}{opt gen:erate(stub)} | {opt fr:ame(name)}{c )-} [{opt eff:ects(list)} {opt theta(matname)} {opt nsim(#)} {opt burn:in(#)} {opt inter:val(#)} {opt seed(#)} {opt replace} {opt mode(#)} {opt zone(varname)} {opt sampl:er(zoo)}]
 
 {p 8 16 2}
+{cmd:nwalaam bootstrap}{cmd:,} {opt reps(#)} [{opt seed(#)} {opt level(#)} {opt meth:od(sa|ee|mple)} {opt sav:ing(filename)} {opt replace} {opt nodots} {opt silent} {opt burn:in(#)} {opt inter:val(#)} {opt sait:er(#)} {opt prop:osals(#)} {opt runs(#)} {opt iter:ations(#)} {opt thin(#)} {opt fitburn:in(#)} {opt lr:ate(#)} {opt thr:eads(#)}]
+
+{p 8 16 2}
 {cmd:estat gof} [{cmd:,} {opt nsim(#)} {opt extra(list)} {opt noex:tra} {opt burn:in(#)} {opt inter:val(#)} {opt seed(#)} {opt plot} {opt distplot} {opt all} {opt name(name)} {opt sav:ing(filename)} {opt exp:ort(filename [, options])} {it:graph_options}]
 
 {p 8 16 2}
@@ -114,8 +117,7 @@ equilibrium-expectation standard errors were about half to nine tenths of the ex
 while the stochastic approximation standard errors were within 20 percent of them. The pseudo-likelihood estimate
 ignores the dependence between the outcomes, its standard errors are too small, and it does not exist when an effect separates the outcomes (the fit then stops with r(430); the karate club with the
 faction as outcome is an example). Use stochastic approximation (the default) for estimates and standard errors that are to be reported; use {cmd:method(ee)} to reproduce ALAAMEE, and {cmd:mple} for
-starting values and a quick look. {cmd:nwalaam} has no option for bootstrap standard errors or for the exact likelihood;
-a parametric bootstrap can be done by hand: draw outcome vectors from the fitted model with {cmd:nwalaam simulate}, {opt generate()}, refit each one and take the standard deviations of the coefficients.
+starting values and a quick look. {cmd:nwalaam} has no option for the exact likelihood; {cmd:nwalaam bootstrap} gives parametric bootstrap standard deviations, percentile intervals and bias of the estimates, which are a check on the model standard errors.
 
 {pstd}
 {bf:Starting values and divergence.} The default start is the one of Snijders' Algorithm S (a short simulation). In rare cases it returns very large values (when the statistic of a
@@ -251,6 +253,33 @@ chain starts at the observed outcome; {opt burnin()} proposals (default the larg
 actors) precede the first draw and {opt interval()} proposals (default the larger of 1,000 and 10 times the number of actors) lie
 between draws. Missing outcomes stay missing. The same {opt seed()} gives the same draws. Returned in {cmd:r()}: {cmd:r(nsim)}, {cmd:r(seed)},
 {cmd:r(burnin)}, {cmd:r(interval)} and the observed statistics {cmd:r(observed)}.
+
+
+{marker bootstrap}{...}
+{title:nwalaam bootstrap}
+
+{pstd}Parametric bootstrap after a fit. {opt reps(#)} (at least 2) outcome vectors are drawn from the fitted model (the sampler, effects, covariates and network of the fit, at the fitted
+coefficients {cmd:e(b)}, in one chain exactly as {cmd:nwalaam simulate}: {opt burnin()} proposals, default the larger of 10,000 and 100 times the number of actors, before the first draw and
+{opt interval()} proposals, default the larger of 1,000 and 10 times the number of actors, between draws). Each draw is refitted with the same effects and the same method
+({opt method()} may name another one); the starting values of every refit are the fitted coefficients (not Algorithm S; {cmd:mple} needs none). The settings of the refits are those of the fit
+(SA: {opt saiter()}, {opt proposals()}; EE: {opt runs()}, {opt iterations()}, {opt thin()}, {opt fitburnin()}, {opt proposals()}) and can be overridden;
+{opt lrate()} (default 0.01) and {opt threads()} apply to {cmd:method(ee)}. The cost is {opt reps()} times the time of one fit plus the simulation.
+
+{pstd}The table shows, for each coefficient, the estimate of the fit, its model standard error, the standard deviation of the refitted coefficients, the bootstrap bias (mean of the refits minus the fitted
+estimate; a bias is not subtracted from anything) and the percentile interval of the refits at {opt level()} (default 95). Only successful refits enter the table. A refit fails when its draw has no variation, the
+estimation stops with an error (for example r(430), divergence) or an estimate is missing or beyond 1e10; the number of failures is always shown, and a warning appears when more than 10 percent
+fail or fewer than 50 refits succeed. Refits whose stochastic approximation did not meet the convergence criterion are kept and counted separately. The bootstrap is model-based: it is
+only as good as the fitted model, and it assumes that the fitted coefficients are the truth. On very small networks (8 actors) the distribution of the estimates has heavy tails (draws for which no
+maximum likelihood estimate exists) and the standard deviation of the refits is then much larger than the model standard errors; compare the percentile interval.
+
+{pstd}{opt seed(#)} sets Stata's random-number generator once at the start (the simulation seed and the seed of each refit are drawn from it, so the same {opt seed()} gives the same results); without it the
+current state of the generator is used (so {cmd:set seed} before the call works) and the generator advances. The estimation results {cmd:e()} and the data in memory are left unchanged.
+{opt saving(filename)} writes the coefficients of the successful refits to a dataset (variable {cmd:rep} and {cmd:b_1}, {cmd:b_2}, ..., labelled with the effects; {opt replace} overwrites).
+{opt nodots} suppresses the progress marks, {opt silent} the progress marks and the table (the warnings remain). The error is r(301) without a preceding fit, r(198) for a bad option, r(430) if fewer than 2 refits succeed.
+Returned in {cmd:r()}: {cmd:r(b_boot)} (mean of the refits), {cmd:r(sd_boot)}, {cmd:r(bias_boot)}, {cmd:r(V_boot)}, {cmd:r(ci_boot)} (2 x {it:P}: lower and upper limit), {cmd:r(reps)}, {cmd:r(nok)}, {cmd:r(nfail)},
+{cmd:r(nnoconv)}, {cmd:r(level)}, {cmd:r(seed)} (of the simulation), {cmd:r(burnin)}, {cmd:r(interval)} and {cmd:r(method)}.
+
+{pstd}Example: {cmd:nwalaam bootstrap, reps(200) seed(1)}
 
 
 {marker gof}{...}
