@@ -1,0 +1,41 @@
+. nwalaam faction karate, effects(density activity contagion) seed(20261118)
+----------------------------------------------------------------------
+Autologistic actor attribute model (stochastic approximation)
+Outcome: faction (18 of 34)                    Network: karate
+SA repetitions: 2 (converged: yes)             Proposals per iteration: 1000
+----------------------------------------------------------------------
+-----------------------------------------------------
+     faction | Coefficient  Std. err.      z    P>|z|
+-------------+---------------------------------------
+     density |   .5395213   .9510325     0.57   0.571
+    activity |  -.8397623   .3038426    -2.76   0.006
+   contagion |   1.476303   .4046748     3.65   0.000
+-----------------------------------------------------
+All convergence t-ratios are within .1 in absolute value.
+
+. timer clear 1
+
+. timer on 1
+
+. nwalaam bootstrap, reps(40) seed(11) nodots
+
+------------------------------------------------------------------------------
+Parametric bootstrap of the sa fit (refits by sa), 40 outcomes drawn from the fitted model
+Successful refits: 36   failed: 4   (seed  355866200; simulation burn-in 10000, interval 1
+> 000)
+Refits that did not meet the convergence criterion (kept): 2
+------------------------------------------------------------------------------
+Coefficient          Estimate  Model SE   Boot SD Boot bias 95% percentile int.
+------------------------------------------------------------------------------
+density                0.5395    0.9510    1.2672   -0.2994   -2.0952    2.0688
+activity              -0.8398    0.3038    1.0960    0.8852   -0.9233    2.0151
+contagion              1.4763    0.4047    1.1536   -0.6929   -1.6751    1.9872
+------------------------------------------------------------------------------
+Statistics of the successful refits only. Boot bias = mean of the refits minus the
+      fitted estimate. Model-based: the draws come from the fitted model.
+Warning: only 36 refits succeeded (fewer than 50); percentile intervals are unreliable.
+
+. timer off 1
+
+. timer list 1
+   1:     32.92 /        1 =      32.9180

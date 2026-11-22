@@ -9,6 +9,8 @@ nwalaam simulate [outcome [network]], {generate(stub) | frame(name)} [options]
 estat gof [, nsim(#) extra(list) noextra burnin(#) interval(#) seed(#)
            plot distplot all name(name) saving(filename) export(filename [, options]) graph_options]
 estat mcmcdiag [, threshold(#) plot name(name) saving(filename) export(filename [, options]) graph_options]
+nwalaam bootstrap, reps(#) [seed(#) level(#) method(sa|ee|mple) saving(filename) replace nodots silent
+           burnin(#) interval(#) saiter(#) proposals(#) runs(#) iterations(#) thin(#) fitburnin(#) lrate(#) threads(#)]
 nwalaam version
 \end{lstlisting}
 \emph{outcome} is a numeric variable of the dataset with the values 0 and 1 (missing allowed). \emph{network} is the network; it is optional, and the default is the current network. It may be undirected or directed, one-mode or two-mode; a valued network is used as binary (a tie where the value is not 0).
@@ -36,6 +38,10 @@ nwalaam version
 \opt{ci}, \opt{noci}, \opt{level(\#)}, \dots & The display of the coefficient table (Section~\ref{sec:display}). \\
 \bottomrule
 \end{longtable}
+
+\section{Options of the parametric bootstrap}
+
+The options of \texttt{nwalaam bootstrap} (Section~\ref{sec:bootstrap}) are \opt{reps(\#)} (required, at least 2), \opt{seed(\#)}, \opt{level(\#)} (default 95), \opt{method(sa|ee|mple)} (default: the method of the fit), \opt{saving(filename)} with \opt{replace}, \opt{nodots} and \opt{silent}; \opt{burnin()} and \opt{interval()} for the simulation; and the settings of the refits \opt{saiter()}, \opt{proposals()}, \opt{runs()}, \opt{iterations()}, \opt{thin()}, \opt{fitburnin()}, \opt{lrate()} and \opt{threads()}, which default to those of the fit.
 
 \section{Defaults and how to change them}
 

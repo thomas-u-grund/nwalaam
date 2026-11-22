@@ -8,7 +8,7 @@
   \item \textbf{Several waves.} An ALAAM describes one observation of the network and the outcome. For networks and outcomes observed over time, use a stochastic actor-oriented model (\texttt{nwsaom}).
   \item \textbf{Several outcomes or several networks at once.} One outcome and one main network per model; a second network enters through \opt{settinghomophily()}.
   \item \textbf{Causal claims.} The model describes the distribution of the outcome over the network; it does not separate influence from selection (Chapter~\ref{ch:model}).
-  \item \textbf{Parametric bootstrap, model selection.} There is no command for a parametric bootstrap and no information criterion; \texttt{nwalaam simulate} draws the outcomes, so a bootstrap can be programmed around it.
+  \item \textbf{Model selection, exact likelihood.} \texttt{nwalaam bootstrap} gives model-based standard deviations, bias and percentile intervals (Section~\ref{sec:bootstrap}), but there is no information criterion and no option for the exact likelihood.
   \item \textbf{Missing network ties.} Missing ties are not modelled.
 \end{itemize}
 

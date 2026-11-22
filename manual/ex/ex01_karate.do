@@ -32,3 +32,11 @@ quietly summarize age
 generate double age_c = age - r(mean)
 nwalaam faction karate, effects(density contagion ego(age_c) same(gender)) seed(20261118)
 log close
+log using out/karate_boot.txt, text replace
+nwalaam faction karate, effects(density activity contagion) seed(20261118)
+timer clear 1
+timer on 1
+nwalaam bootstrap, reps(40) seed(11) nodots
+timer off 1
+timer list 1
+log close

@@ -36,4 +36,5 @@ The observed statistics of the karate club agree with those published with \alaa
 \begin{itemize}[nosep]
   \item The equilibrium-expectation standard errors on large networks: see Section~\ref{sec:accuracy}.
   \item Performance on very large networks. The compiled plugin makes fits of networks of a few hundred actors fast; the computing time grows with the number of actors and effects, and the effects \opt{geographichomophily()} and \opt{contagiondist()} visit every actor for every proposal.
+  \item The standard errors on very small networks (8 actors): the exact standard errors understate the sampling variability there, and the standard deviation of a parametric bootstrap exceeds them (Section~\ref{sec:bootstrap}).
 \end{itemize}
