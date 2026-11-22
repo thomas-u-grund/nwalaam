@@ -44,7 +44,8 @@ the command stops with error 416 and names the variable and the number of missin
 {synoptline}
 {synopt :{opt eff:ects(list)}}the effects of the model (required); see below{p_end}
 {synopt :{opt meth:od(sa|ee)}}estimator: {cmd:sa}, stochastic approximation (maximum likelihood; the default), or {cmd:ee}, the equilibrium-expectation update of ALAAMEE{p_end}
-{synopt :{opt mple}}maximum pseudo-likelihood estimate only (a logit of the outcome on the change statistics); no standard errors from sampling{p_end}
+{synopt :{opt mple}}maximum pseudo-likelihood estimate only (a logit of the outcome on the change statistics); no standard errors from sampling; its standard errors are too small and it does not exist
+under separation (r(430), see {bf:Limits of method(ee) and mple}){p_end}
 {synopt :{opt sait:er(#)}}length of the stochastic approximation: iterations of each phase; default {cmd:500}{p_end}
 {synopt :{opt prop:osals(#)}}proposals per iteration; default {cmd:1000}{p_end}
 {synopt :{opt start(matname)}}1 x {it:P} starting values (default: Algorithm S, 100 iterations){p_end}
@@ -104,6 +105,17 @@ errors; on a random network of 16 actors the equilibrium-expectation estimates l
 that reason stochastic approximation is the default; {cmd:method(ee)} reproduces ALAAMEE and is the choice when results are to be compared with it.
 The pseudo-likelihood estimate ({cmd:mple}) treats the log odds of each actor as independent and its standard errors are too small; use it
 for starting values and for a quick look.
+
+{pstd}
+{bf:Limits of {cmd:method(ee)} and {cmd:mple}.} Neither estimator is the maximum likelihood estimate. {cmd:method(ee)} is a stochastic algorithm that stops at values near the equilibrium, not at the
+maximum, and its standard errors come from an approximation. On very small networks (8 actors, four effects, checked against the exact estimates obtained by enumerating all outcome vectors) the
+equilibrium-expectation standard errors were about half to nine tenths of the exact ones and the estimates differed from the exact ones by up to about half an exact standard error; on a larger network
+(ALAAMEE's simulated example of 500 actors, compared with a parametric bootstrap) the standard errors of the density and activity effects were 0.6 and 0.35 times the bootstrap standard deviations
+while the stochastic approximation standard errors were within 20 percent of them. The pseudo-likelihood estimate
+ignores the dependence between the outcomes, its standard errors are too small, and it does not exist when an effect separates the outcomes (the fit then stops with r(430); the karate club with the
+faction as outcome is an example). Use stochastic approximation (the default) for estimates and standard errors that are to be reported; use {cmd:method(ee)} to reproduce ALAAMEE, and {cmd:mple} for
+starting values and a quick look. {cmd:nwalaam} has no option for bootstrap standard errors or for the exact likelihood;
+a parametric bootstrap can be done by hand: draw outcome vectors from the fitted model with {cmd:nwalaam simulate}, {opt generate()}, refit each one and take the standard deviations of the coefficients.
 
 {pstd}
 {bf:Starting values and divergence.} The default start is the one of Snijders' Algorithm S (a short simulation). In rare cases it returns very large values (when the statistic of a

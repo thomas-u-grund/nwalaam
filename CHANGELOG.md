@@ -3,6 +3,11 @@
 All notable changes to nwalaam are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project uses [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Help
+- States the limits of `method(ee)` and `mple`: the equilibrium-expectation estimates and standard errors on very small networks and its standard errors on a large one, the pseudo-likelihood estimate (standard errors too small, no estimate under separation, r(430)), the advice to report stochastic approximation, and that the package has no option for bootstrap standard errors or the exact likelihood (a parametric bootstrap by hand with `nwalaam simulate`).
+
 ## [1.3.1] - 2026-11-20
 
 ### Fixed
