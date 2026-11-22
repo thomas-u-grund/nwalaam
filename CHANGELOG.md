@@ -3,13 +3,16 @@
 All notable changes to nwalaam are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project uses [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.4.0] - 2026-11-22
 
 ### Added
-- `nwalaam bootstrap, reps(#)`: parametric bootstrap after a fit. Draws outcome vectors from the fitted model (as `nwalaam simulate`), refits each with the same method and effects from the fitted coefficients, and reports model SE, bootstrap SD, bias and percentile interval; failed refits are counted, `e()` and the data are untouched; `r(b_boot)`, `r(sd_boot)`, `r(V_boot)`, `r(ci_boot)`, `r(bias_boot)`, `r(nfail)`; `saving()` writes the refits to a dataset. New test `cscripts/test_nwalaam_bootstrap.do`.
+- `nwalaam bootstrap, reps(#)`: parametric bootstrap after a fit, for model-based standard errors. Draws outcome vectors from the fitted model (as `nwalaam simulate`), refits each with the same method and effects from the fitted coefficients, and reports model SE, bootstrap SD, bias and percentile interval; failed refits are counted, `e()` and the data are untouched; `r(b_boot)`, `r(sd_boot)`, `r(V_boot)`, `r(ci_boot)`, `r(bias_boot)`, `r(nfail)`; `saving()` writes the refits to a dataset. New test `cscripts/test_nwalaam_bootstrap.do`.
 
 ### Help
-- States the limits of `method(ee)` and `mple`: the equilibrium-expectation estimates and standard errors on very small networks and its standard errors on a large one, the pseudo-likelihood estimate (standard errors too small, no estimate under separation, r(430)), the advice to report stochastic approximation, and and that the package has no option for the exact likelihood.
+- States the limits of `method(ee)` and `mple`: the equilibrium-expectation standard errors on very small networks (ranging from about half to about the exact ones in the two problems checked) and on a large one, the fact that on very small networks even the exact standard errors understate the sampling variability of the estimate (heavy tails), the pseudo-likelihood estimate (standard errors too small, no estimate under separation, r(430)), the advice to report stochastic approximation, and that the package has no option for the exact likelihood; `nwalaam bootstrap` is named as the check.
+- The help of `nwalaam bootstrap` states that on very small networks the bootstrap standard deviation exceeds the model standard errors.
+
+Tested on macOS with Stata 17 BE (bootstrap, ado, exact2, patch131 and noplugin tests, and the package-level install from this tree) and on Windows 11 with StataNow 19.5 MP (all 14 test files pass). Linux and Stata 18 on the Mac were not run for this version. The compiled plugin is the one of 1.2.0 (unchanged). The manual keeps its version.
 
 ## [1.3.1] - 2026-11-20
 

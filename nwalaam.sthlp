@@ -1,5 +1,5 @@
 {smcl}
-{* *! version 1.3.1  20nov2026 author: Thomas Grund}{...}
+{* *! version 1.4.0  22nov2026 author: Thomas Grund}{...}
 {marker topic}
 {title:Title}
 
@@ -111,8 +111,9 @@ for starting values and for a quick look.
 
 {pstd}
 {bf:Limits of {cmd:method(ee)} and {cmd:mple}.} Neither estimator is the maximum likelihood estimate. {cmd:method(ee)} is a stochastic algorithm that stops at values near the equilibrium, not at the
-maximum, and its standard errors come from an approximation. On very small networks (8 actors, four effects, checked against the exact estimates obtained by enumerating all outcome vectors) the
-equilibrium-expectation standard errors were about half to nine tenths of the exact ones and the estimates differed from the exact ones by up to about half an exact standard error; on a larger network
+maximum, and its standard errors come from an approximation. On very small networks (8 actors, three or four effects, checked against the exact estimates obtained by enumerating all outcome vectors) the
+equilibrium-expectation standard errors ranged from about half to about the exact ones in the two problems checked, and the estimates differed from the exact ones by up to about half an exact standard error. On a network that small the
+exact (Fisher information) standard errors themselves understate the sampling variability of the estimate, because the distribution of the estimates has heavy tails (estimates beyond 10 in absolute value occur); {cmd:nwalaam bootstrap} gives model-based standard deviations for that case. On a larger network
 (ALAAMEE's simulated example of 500 actors, compared with a parametric bootstrap) the standard errors of the density and activity effects were 0.6 and 0.35 times the bootstrap standard deviations
 while the stochastic approximation standard errors were within 20 percent of them. The pseudo-likelihood estimate
 ignores the dependence between the outcomes, its standard errors are too small, and it does not exist when an effect separates the outcomes (the fit then stops with r(430); the karate club with the
@@ -270,7 +271,7 @@ estimate; a bias is not subtracted from anything) and the percentile interval of
 estimation stops with an error (for example r(430), divergence) or an estimate is missing or beyond 1e10; the number of failures is always shown, and a warning appears when more than 10 percent
 fail or fewer than 50 refits succeed. Refits whose stochastic approximation did not meet the convergence criterion are kept and counted separately. The bootstrap is model-based: it is
 only as good as the fitted model, and it assumes that the fitted coefficients are the truth. On very small networks (8 actors) the distribution of the estimates has heavy tails (draws for which no
-maximum likelihood estimate exists) and the standard deviation of the refits is then much larger than the model standard errors; compare the percentile interval.
+maximum likelihood estimate exists) and the standard deviation of the refits is then much larger than the model (Fisher information) standard errors, which understate the sampling variability of the estimate on a network that small; compare the percentile interval.
 
 {pstd}{opt seed(#)} sets Stata's random-number generator once at the start (the simulation seed and the seed of each refit are drawn from it, so the same {opt seed()} gives the same results); without it the
 current state of the generator is used (so {cmd:set seed} before the call works) and the generator advances. The estimation results {cmd:e()} and the data in memory are left unchanged.
@@ -338,4 +339,4 @@ A user manual (PDF in the {cmd:manual} folder of the package source) is archived
 {p 4 8 2}Stivala, A. 2023. Overcoming near-degeneracy in the autologistic actor attribute model. arXiv:2309.07338.{p_end}
 
 {hline}
-{pstd}{it:nwalaam version 1.3.1, 20 November 2026}{p_end}{* nwversion}
+{pstd}{it:nwalaam version 1.4.0, 22 November 2026}{p_end}{* nwversion}

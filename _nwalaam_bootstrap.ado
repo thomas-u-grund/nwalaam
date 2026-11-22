@@ -1,4 +1,4 @@
-*! version 1.3.1  20nov2026 _nwalaam_bootstrap
+*! version 1.4.0  22nov2026 _nwalaam_bootstrap
 * Copyright (C) 2026 Thomas U. Grund. Part of nwalaam; GNU GPL-3 (see LICENSE).
 * nwalaam bootstrap: parametric bootstrap after an nwalaam fit. Draws outcome vectors from the fitted model (the machinery of nwalaam simulate),
 * refits each with the same method and effects, and summarises the refitted coefficients. e() is not touched.

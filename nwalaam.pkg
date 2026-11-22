@@ -4,8 +4,8 @@ d Thomas U. Grund, RWTH Aachen University, www.grund.co.uk
 d email: thomas.u.grund@gmail.com
 d GPL-3. Requires the core package nwcommands.
 d Requires nwcommands (core), version 3.29.0 or later
-d Version: 1.3.1
-d Distribution-Date: 20nov2026
+d Version: 1.4.0
+d Distribution-Date: 22nov2026
 f nwalaam.ado
 f nwalaam_estat.ado
 f _nwalaam_prep.ado
